@@ -1,0 +1,236 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Nunito:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg: #0f0f1a;
+    --color-surface: #1a1a2e;
+    --color-surface-hover: #242442;
+    --color-border: #2a2a45;
+    --color-text: #e8e8f0;
+    --color-text-muted: #8b8ba5;
+    --color-primary: #8b3dff;
+    --color-accent: #ffd24a;
+  }
+  
+  body {
+    @apply bg-dark-950 text-dark-100 font-body antialiased;
+    background-image: 
+      radial-gradient(ellipse at 20% 0%, rgba(139,61,255,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, rgba(249,155,7,0.04) 0%, transparent 50%);
+    min-height: 100vh;
+  }
+
+  /* Скроллбар */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0f0f1a;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #3d3d4f;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #575772;
+  }
+}
+
+@layer components {
+  /* Карточка товара */
+  .product-card {
+    @apply relative bg-dark-900/80 backdrop-blur-sm border border-dark-700/50 
+           rounded-2xl overflow-hidden transition-all duration-300
+           hover:border-primary-700/50 hover:shadow-card-hover hover:-translate-y-1;
+  }
+
+  /* Мистическое свечение */
+  .glow-border {
+    @apply relative;
+    &::before {
+      content: '';
+      @apply absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500;
+      background: linear-gradient(135deg, rgba(139,61,255,0.2), rgba(249,155,7,0.1));
+      filter: blur(20px);
+      z-index: -1;
+    }
+    &:hover::before {
+      @apply opacity-100;
+    }
+  }
+
+  /* Кнопка — основная */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3
+           bg-primary-600 hover:bg-primary-500 text-white font-semibold
+           rounded-xl transition-all duration-200
+           shadow-md hover:shadow-glow active:scale-[0.98];
+  }
+
+  /* Кнопка — акцентная (золотая) */
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3
+           bg-gradient-to-r from-accent-500 to-accent-400 
+           hover:from-accent-400 hover:to-accent-300
+           text-dark-950 font-bold rounded-xl transition-all duration-200
+           shadow-md hover:shadow-glow-gold active:scale-[0.98];
+  }
+
+  /* Кнопка — ghost */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3
+           text-dark-300 hover:text-white hover:bg-dark-800
+           rounded-xl transition-all duration-200;
+  }
+
+  /* Бейдж */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+  .badge-hit {
+    @apply badge bg-accent-500/20 text-accent-400 border border-accent-500/30;
+  }
+  .badge-new {
+    @apply badge bg-primary-500/20 text-primary-400 border border-primary-500/30;
+  }
+  .badge-discount {
+    @apply badge bg-red-500/20 text-red-400 border border-red-500/30;
+  }
+
+  /* Звёзды рейтинга */
+  .star-filled {
+    @apply text-accent-400;
+  }
+  .star-empty {
+    @apply text-dark-600;
+  }
+
+  /* Секция */
+  .section-title {
+    @apply text-2xl md:text-3xl font-display font-bold text-white;
+  }
+
+  /* Ввод */
+  .input-field {
+    @apply w-full px-4 py-3 bg-dark-900 border border-dark-700 rounded-xl
+           text-dark-100 placeholder-dark-500
+           focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/50
+           transition-colors duration-200;
+  }
+
+  /* Стеклянные карточки */
+  .glass {
+    @apply bg-night-950/60 backdrop-blur-md;
+  }
+  .glass-light {
+    @apply bg-night-950/40 backdrop-blur-sm border border-mystic-800/15;
+  }
+
+  /* Card hover */
+  .card-hover {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover;
+  }
+
+  /* Кнопка — золотая */
+  .btn-gold {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3
+           bg-gradient-to-r from-gold-500 to-gold-400
+           hover:from-gold-400 hover:to-gold-300
+           text-night-950 font-bold rounded-xl transition-all duration-200
+           shadow-md hover:shadow-glow-gold active:scale-[0.98];
+  }
+
+  /* Градиентный текст */
+  .text-gradient-mystic {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-mystic-400 to-mystic-300;
+  }
+  .text-gradient-gold {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-gold-400 to-gold-300;
+  }
+
+  /* Мистическое свечение */
+  .glow-mystic {
+    box-shadow: 0 0 30px rgba(147, 51, 234, 0.3);
+  }
+}
+
+/* Shimmer эффект для загрузки */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(30,30,47,1) 25%,
+    rgba(45,45,70,1) 50%,
+    rgba(30,30,47,1) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* Звёздное поле */
+.starfield {
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.15), transparent),
+    radial-gradient(1px 1px at 30% 45%, rgba(255,255,255,0.1), transparent),
+    radial-gradient(1px 1px at 50% 25%, rgba(255,255,255,0.12), transparent),
+    radial-gradient(1px 1px at 70% 65%, rgba(255,255,255,0.08), transparent),
+    radial-gradient(1px 1px at 90% 35%, rgba(255,255,255,0.1), transparent),
+    radial-gradient(1.5px 1.5px at 25% 75%, rgba(147,51,234,0.2), transparent),
+    radial-gradient(1.5px 1.5px at 75% 15%, rgba(251,191,36,0.15), transparent);
+}
+
+/* Мистический шрифт */
+.font-mystical {
+  font-family: 'Cormorant Garamond', serif;
+}
+
+/* Частицы на фоне (опционально) */
+.particles-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(139,61,255,0.3), transparent),
+    radial-gradient(1px 1px at 40% 70%, rgba(249,155,7,0.2), transparent),
+    radial-gradient(1px 1px at 60% 20%, rgba(139,61,255,0.2), transparent),
+    radial-gradient(1px 1px at 80% 50%, rgba(79,209,197,0.2), transparent),
+    radial-gradient(1px 1px at 10% 80%, rgba(249,155,7,0.15), transparent),
+    radial-gradient(1px 1px at 90% 10%, rgba(139,61,255,0.15), transparent);
+}
+
+/* Мистический фоновый паттерн — переиспользуемый утилитарный класс */
+.bg-mystic-pattern {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url('/images/bg-mystic.png');
+  background-position: center center;
+  background-size: cover;
+  background-repeat: repeat-y;
+  background-attachment: fixed;
+  opacity: 0.08;
+}
+
+.bg-mystic-pattern-fade {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, #0a0614 0%, transparent 15%, transparent 85%, #0a0614 100%),
+    linear-gradient(to right, #0a0614 0%, transparent 10%, transparent 90%, #0a0614 100%);
+}
