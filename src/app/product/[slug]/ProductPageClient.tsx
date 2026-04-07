@@ -1,14 +1,16 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/catalog/ProductCard';
 import { useFavoritesStore } from '@/hooks/useFavorites';
+import { useCartStore } from '@/hooks/useCart';
 import { psychics, products, reviewTexts } from '@/data/seed-data';
-import { Star, Clock, MessageCircle, Shield, Heart, ArrowLeft, ShoppingBag, User, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { Star, Clock, MessageCircle, Shield, Heart, ArrowLeft, ShoppingBag, ShoppingCart, User, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn, formatPrice, categoryLabels, themeLabels } from '@/lib/utils';
 
 // Трансформация данных (то же что на главной)
@@ -47,6 +49,58 @@ function generateReviews(productCategory: string, count: number) {
     authorName: names[i % names.length],
     createdAt: new Date(Date.now() - (i + 1) * 86400000 * (3 + Math.random() * 30)).toISOString(),
   }));
+}
+
+function CartButtons({ product }: { product: { id: string; slug: string; title: string; price: number; oldPrice: number | null; imageUrl: string; category: string; psychic?: { name: string } | null } }) {
+  const router = useRouter();
+  const cartItems = useCartStore((s) => s.items);
+  const addItem = useCartStore((s) => s.addItem);
+  const cartLoaded = useCartStore((s) => s.loaded);
+  const loadCart = useCartStore((s) => s.loadFromStorage);
+
+  useEffect(() => {
+    if (!cartLoaded) loadCart();
+  }, [cartLoaded, loadCart]);
+
+  const inCart = cartItems.some((i) => i.productId === product.id);
+
+  const cartData = {
+    productId: product.id,
+    slug: product.slug,
+    title: product.title,
+    price: product.price,
+    oldPrice: product.oldPrice,
+    imageUrl: product.imageUrl || null,
+    psychicName: product.psychic?.name || '',
+    category: product.category,
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => { addItem(cartData); router.push('/cart'); }}
+        className="w-full btn-gold flex items-center justify-center gap-2 text-base py-4 mb-2"
+      >
+        <ShoppingBag className="w-5 h-5" />
+        Купить сейчас
+      </button>
+      <button
+        onClick={() => addItem(cartData)}
+        className={cn(
+          'w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 mb-3',
+          inCart
+            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+            : 'border border-mystic-700/30 text-mystic-300 hover:text-white hover:border-mystic-500/50 hover:bg-mystic-500/10',
+        )}
+      >
+        {inCart ? (
+          <><Check className="w-4 h-4" /> В корзине</>
+        ) : (
+          <><ShoppingCart className="w-4 h-4" /> В корзину</>
+        )}
+      </button>
+    </>
+  );
 }
 
 function FavoriteButton({ slug }: { slug: string }) {
@@ -145,9 +199,20 @@ export default function ProductPage() {
           <div>
             {/* Изображение товара */}
             <div className="relative aspect-[16/9] rounded-2xl overflow-hidden bg-gradient-to-br from-mystic-900/40 to-cosmic-900/40 border border-mystic-800/20 mb-8">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-8xl opacity-30">{categoryIcon[product.category] || '✧'}</span>
-              </div>
+              {product.imageUrl ? (
+                <Image
+                  src={product.imageUrl}
+                  alt={product.title}
+                  fill
+                  sizes="(min-width: 1024px) 60vw, 100vw"
+                  className="object-cover"
+                  unoptimized
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-8xl opacity-30">{categoryIcon[product.category] || '✧'}</span>
+                </div>
+              )}
               {/* Бейджи */}
               <div className="absolute top-4 left-4 flex gap-2">
                 {product.badges.map((badge) => (
@@ -228,8 +293,21 @@ export default function ProductPage() {
               <div className="mb-8 p-5 rounded-2xl glass-light">
                 <h3 className="font-display text-base font-semibold text-white mb-4">О мастере</h3>
                 <Link href={`/psychic/${psychic.slug}`} className="flex items-start gap-4 group">
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-mystic-500/30 to-cosmic-600/30 border border-mystic-500/20 flex items-center justify-center text-2xl shrink-0">
-                    ✧
+                  <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 relative">
+                    {psychic.avatarUrl ? (
+                      <Image
+                        src={psychic.avatarUrl}
+                        alt={psychic.name}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-mystic-500/30 to-cosmic-600/30 border border-mystic-500/20 flex items-center justify-center text-2xl">
+                        ✧
+                      </div>
+                    )}
                   </div>
                   <div>
                     <h4 className="font-display text-base font-semibold text-white group-hover:text-mystic-200 transition-colors">
@@ -326,11 +404,8 @@ export default function ProductPage() {
                 </div>
               </div>
 
-              {/* Кнопка заказа */}
-              <button className="w-full btn-gold flex items-center justify-center gap-2 text-base py-4 mb-3">
-                <ShoppingBag className="w-5 h-5" />
-                Заказать
-              </button>
+              {/* Кнопки покупки */}
+              <CartButtons product={product} />
 
               <FavoriteButton slug={product.slug} />
 

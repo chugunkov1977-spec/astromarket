@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { CatalogFilters } from '@/types';
 
@@ -33,11 +35,70 @@ const priceSegments = [
 
 const sortOptions = [
   { key: 'popular', label: 'По популярности' },
-  { key: 'rating', label: 'По рейтингу' },
   { key: 'price_asc', label: 'Сначала дешёвые' },
   { key: 'price_desc', label: 'Сначала дорогие' },
-  { key: 'new', label: 'Новинки' },
+  { key: 'rating', label: 'По рейтингу' },
+  { key: 'new', label: 'По новизне' },
 ];
+
+// ── Custom sort dropdown ──
+
+function SortDropdown({ value, onSelect }: { value: string; onSelect: (key: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
+  }, [open]);
+
+  const currentLabel = sortOptions.find((o) => o.key === value)?.label || 'По популярности';
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full px-4 py-3 rounded-xl bg-night-950/60 border border-mystic-700/30 text-sm text-mystic-300 flex items-center justify-between hover:border-mystic-500/40 transition-all cursor-pointer"
+      >
+        <span>{currentLabel}</span>
+        <ChevronDown className={cn('w-4 h-4 text-mystic-500 transition-transform duration-200', open && 'rotate-180')} />
+      </button>
+
+      {/* Dropdown panel */}
+      <div
+        className={cn(
+          'absolute top-full left-0 right-0 mt-1 z-50 rounded-xl bg-night-950/95 backdrop-blur-xl border border-mystic-700/30 shadow-xl shadow-black/50 overflow-hidden transition-all duration-200 origin-top',
+          open ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-1 scale-95 pointer-events-none',
+        )}
+      >
+        {sortOptions.map((opt) => (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => { onSelect(opt.key); setOpen(false); }}
+            className={cn(
+              'w-full text-left px-4 py-2.5 text-sm cursor-pointer transition-all',
+              value === opt.key
+                ? 'text-gold-400 bg-mystic-800/20 font-medium'
+                : 'text-mystic-400 hover:text-white hover:bg-mystic-800/30',
+            )}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ──
 
 export default function CatalogFiltersComponent({ filters, onChange }: CatalogFiltersProps) {
   const update = (patch: Partial<CatalogFilters>) => {
@@ -112,17 +173,10 @@ export default function CatalogFiltersComponent({ filters, onChange }: CatalogFi
       {/* Сортировка */}
       <div>
         <h3 className="text-xs font-semibold text-mystic-400 uppercase tracking-wider mb-3">Сортировка</h3>
-        <select
+        <SortDropdown
           value={filters.sort || 'popular'}
-          onChange={(e) => update({ sort: e.target.value })}
-          className="w-full px-3 py-2 rounded-lg bg-night-950/60 border border-mystic-800/30 text-sm text-mystic-300 focus:outline-none focus:border-mystic-500/50 transition-all"
-        >
-          {sortOptions.map((opt) => (
-            <option key={opt.key} value={opt.key}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+          onSelect={(key) => update({ sort: key })}
+        />
       </div>
     </div>
   );

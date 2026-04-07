@@ -1,19 +1,21 @@
 'use client';
 
+import { useRef, useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/catalog/ProductCard';
-import PsychicCarousel from '@/components/psychic/PsychicCarousel';
+import PsychicCard from '@/components/psychic/PsychicCard';
 import { psychics, products } from '@/data/seed-data';
-import { ArrowRight, Search, UserCheck, Wand2, Gift } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Search, UserCheck, Wand2, Gift } from 'lucide-react';
 
 // Преобразуем seed-данные в формат компонентов
 const psychicsList = psychics.map((p) => ({
   id: p.slug,
   slug: p.slug,
   name: p.name,
+  avatarUrl: p.avatarUrl,
   bio: p.bio,
   shortBio: p.shortBio,
   specialization: p.specialization,
@@ -30,6 +32,7 @@ const productsList = products.map((p) => {
     slug: p.slug,
     title: p.title,
     shortDescription: p.shortDescription,
+    imageUrl: p.imageUrl,
     category: p.category,
     price: p.price,
     oldPrice: p.oldPrice || null,
@@ -77,6 +80,113 @@ function SectionHeader({ title, href, linkText }: { title: string; href?: string
   );
 }
 
+// Карусель мастеров с навигацией
+function PsychicsCarousel({ psychics: list }: { psychics: typeof psychicsList }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    checkScroll();
+    el.addEventListener('scroll', checkScroll, { passive: true });
+    window.addEventListener('resize', checkScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [checkScroll]);
+
+  const scroll = (dir: 'left' | 'right') => {
+    scrollRef.current?.scrollBy({ left: dir === 'left' ? -280 : 280, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="relative">
+      {/* Scrollable row */}
+      <div
+        ref={scrollRef}
+        className="flex flex-row gap-4 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth py-2 px-1"
+      >
+        {list.map((psychic, i) => (
+          <PsychicCard key={psychic.id} psychic={psychic} index={i} />
+        ))}
+      </div>
+
+      {/* Left fade */}
+      {canScrollLeft && (
+        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#0a0614] to-transparent pointer-events-none z-[5]" />
+      )}
+
+      {/* Right fade */}
+      {canScrollRight && (
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#0a0614] to-transparent pointer-events-none z-[5]" />
+      )}
+
+      {/* Left arrow */}
+      {canScrollLeft && (
+        <button
+          onClick={() => scroll('left')}
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-night-950/80 backdrop-blur-sm border border-mystic-700/30 hover:border-mystic-500/40 hover:bg-mystic-900/80 flex items-center justify-center transition-all shadow-lg"
+          aria-label="Прокрутить влево"
+        >
+          <ArrowLeft className="w-4 h-4 text-mystic-300" />
+        </button>
+      )}
+
+      {/* Right arrow */}
+      {canScrollRight && (
+        <button
+          onClick={() => scroll('right')}
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-night-950/80 backdrop-blur-sm border border-mystic-700/30 hover:border-mystic-500/40 hover:bg-mystic-900/80 flex items-center justify-center transition-all shadow-lg"
+          aria-label="Прокрутить вправо"
+        >
+          <ArrowRight className="w-4 h-4 text-mystic-300" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+const banners = [
+  { text: 'Скидка 20% на первый заказ', sub: 'Для новых пользователей — используйте промокод WELCOME20', btn: 'Активировать скидку', href: '/catalog', gradient: 'from-mystic-900 via-purple-900 to-mystic-900' },
+  { text: 'Бесплатная карта дня', sub: 'Узнайте, что приготовили звёзды на сегодня', btn: 'Получить карту', href: '/catalog?category=TAROT', gradient: 'from-cosmic-900 via-indigo-900 to-cosmic-900' },
+  { text: 'Подписка от 499 ₽/мес', sub: 'Ежедневные прогнозы и персональные расклады', btn: 'Выбрать тариф', href: '/subscription', gradient: 'from-amber-950 via-yellow-950 to-amber-950' },
+];
+
+function RotatingBanner() {
+  const idx = Math.floor(Date.now() / (3 * 60 * 60 * 1000)) % 3;
+  const b = banners[idx];
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 my-3">
+      <div className={`flex items-center justify-between rounded-2xl bg-gradient-to-r ${b.gradient} px-6 py-5 md:py-6 min-h-[100px] relative`}>
+        <div>
+          <p className="font-display text-base md:text-xl font-bold text-white mb-1">{b.text}</p>
+          <p className="text-xs md:text-sm text-mystic-400">{b.sub}</p>
+        </div>
+        <Link href={b.href} className="btn-gold shrink-0 text-xs md:text-sm px-4 py-2 md:px-6 md:py-2.5">
+          {b.btn}
+        </Link>
+        {/* Dots */}
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+          {[0, 1, 2].map((i) => (
+            <span key={i} className={`w-1.5 h-1.5 rounded-full ${i === idx ? 'bg-gold-400' : 'bg-white/20'}`} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   return (
     <div className="min-h-screen relative">
@@ -117,25 +227,8 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ===== ПРОМО-БАННЕР ===== */}
-        <div className="max-w-7xl mx-auto px-4 my-3">
-          <div className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-mystic-900 via-cosmic-900 to-mystic-900 px-6 py-5 md:py-6 min-h-[100px]">
-            <div>
-              <p className="font-display text-base md:text-xl font-bold text-white mb-1">
-                Персональные AI-расклады
-              </p>
-              <p className="text-xs md:text-sm text-mystic-400">
-                Точность и глубина предсказаний
-              </p>
-            </div>
-            <Link
-              href="/catalog"
-              className="btn-gold shrink-0 text-xs md:text-sm px-4 py-2 md:px-6 md:py-2.5"
-            >
-              −20% на первый заказ
-            </Link>
-          </div>
-        </div>
+        {/* ===== ПРОМО-БАННЕР (ротация) ===== */}
+        <RotatingBanner />
 
         {/* ===== ПОПУЛЯРНЫЕ УСЛУГИ ===== */}
         <section className="py-4">
@@ -165,11 +258,9 @@ export default function HomePage() {
 
         {/* ===== ЛУЧШИЕ МАСТЕРА ===== */}
         <section className="py-4">
-          <div className="max-w-7xl mx-auto px-4 md:px-4">
+          <div className="max-w-7xl mx-auto px-4">
             <SectionHeader title="Лучшие мастера" href="/catalog" linkText="Все мастера" />
-          </div>
-          <div className="max-w-7xl mx-auto">
-            <PsychicCarousel psychics={psychicsList} />
+            <PsychicsCarousel psychics={psychicsList} />
           </div>
         </section>
 

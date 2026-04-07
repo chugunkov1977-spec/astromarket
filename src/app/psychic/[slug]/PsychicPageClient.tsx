@@ -2,6 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/catalog/ProductCard';
@@ -73,8 +74,21 @@ export default function PsychicPage() {
           <div className="relative px-6 pb-6 -mt-16">
             <div className="flex flex-col md:flex-row md:items-end gap-5">
               {/* Аватар */}
-              <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-mystic-500/30 to-cosmic-600/30 border-4 border-night-950 flex items-center justify-center text-4xl shadow-2xl shrink-0">
-                ✧
+              <div className="w-32 h-32 rounded-2xl overflow-hidden border-4 border-night-950 shadow-2xl shrink-0 relative">
+                {psychic.avatarUrl ? (
+                  <Image
+                    src={psychic.avatarUrl}
+                    alt={psychic.name}
+                    fill
+                    sizes="128px"
+                    className="object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-mystic-500/30 to-cosmic-600/30 flex items-center justify-center text-4xl">
+                    ✧
+                  </div>
+                )}
               </div>
 
               <div className="flex-1">

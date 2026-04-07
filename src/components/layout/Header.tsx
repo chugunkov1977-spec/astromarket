@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { Search, Heart, User, Menu, X, ShoppingCart } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 import { useFavoritesStore } from '@/hooks/useFavorites';
+import { useCartStore } from '@/hooks/useCart';
 import { cn, formatPrice } from '@/lib/utils';
 import { products, psychics } from '@/data/seed-data';
 
@@ -100,6 +101,7 @@ function NavLinkInner({ href, label, icon, onClick }: { href: string; label: str
     >
       {icon === 'cart' && <ShoppingCart className="w-3.5 h-3.5" />}
       {label}
+      {icon === 'cart' && <CartItemCount />}
       {isActive && (
         <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-gold-400" />
       )}
@@ -112,6 +114,7 @@ function NavLinkStatic({ href, label, icon }: { href: string; label: string; ico
     <Link href={href} className="relative text-sm font-medium text-mystic-300 transition-all duration-200 hover:text-white hover:-translate-y-[1px] flex items-center gap-1.5">
       {icon === 'cart' && <ShoppingCart className="w-3.5 h-3.5" />}
       {label}
+      {icon === 'cart' && <CartItemCount />}
     </Link>
   );
 }
@@ -296,6 +299,27 @@ function FavoritesBadge() {
         </span>
       )}
     </Link>
+  );
+}
+
+// ── Cart item count (inline badge for nav) ──────────
+
+function CartItemCount() {
+  const items = useCartStore((s) => s.items);
+  const loaded = useCartStore((s) => s.loaded);
+  const loadFromStorage = useCartStore((s) => s.loadFromStorage);
+
+  useEffect(() => {
+    if (!loaded) loadFromStorage();
+  }, [loaded, loadFromStorage]);
+
+  const count = items.length;
+  if (count === 0) return null;
+
+  return (
+    <span className="w-5 h-5 rounded-full bg-gold-500 text-night-950 text-[10px] font-bold flex items-center justify-center leading-none">
+      {count > 9 ? '9+' : count}
+    </span>
   );
 }
 

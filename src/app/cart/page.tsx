@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { ShoppingCart, X, Clock, Shield, ArrowRight } from 'lucide-react';
+import { ShoppingCart, X, Shield, ArrowRight, Trash2 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { products, psychics } from '@/data/seed-data';
+import { useCartStore } from '@/hooks/useCart';
 import { cn, formatPrice } from '@/lib/utils';
 
 const categoryIcon: Record<string, string> = {
@@ -20,36 +21,22 @@ const categoryColor: Record<string, string> = {
   RUNES: 'from-emerald-600/30 to-teal-800/30',
 };
 
-// Mock cart: pick 3 products from seed-data
-const initialCart = [
-  products[0], // Классический расклад Таро
-  products[1], // Натальная карта (has oldPrice)
-  products[6], // Таро на отношения (has oldPrice)
-].map((p) => {
-  const ps = psychics.find((x) => x.slug === p.psychicSlug);
-  return {
-    slug: p.slug,
-    title: p.title,
-    category: p.category,
-    price: p.price,
-    oldPrice: p.oldPrice,
-    psychicName: ps?.name || '',
-    generationTimeMin: p.generationTimeMin,
-    generationTimeMax: p.generationTimeMax,
-  };
-});
-
 export default function CartPage() {
-  const [items, setItems] = useState(initialCart);
-  const [promoCode, setPromoCode] = useState('');
+  const items = useCartStore((s) => s.items);
+  const removeItem = useCartStore((s) => s.removeItem);
+  const clearCart = useCartStore((s) => s.clearCart);
+  const getTotal = useCartStore((s) => s.getTotal);
+  const getDiscount = useCartStore((s) => s.getDiscount);
+  const loaded = useCartStore((s) => s.loaded);
+  const loadFromStorage = useCartStore((s) => s.loadFromStorage);
 
-  const removeItem = (slug: string) => {
-    setItems((prev) => prev.filter((i) => i.slug !== slug));
-  };
+  useEffect(() => {
+    if (!loaded) loadFromStorage();
+  }, [loaded, loadFromStorage]);
 
-  const subtotal = items.reduce((sum, i) => sum + (i.oldPrice || i.price), 0);
-  const total = items.reduce((sum, i) => sum + i.price, 0);
-  const discount = subtotal - total;
+  const total = getTotal();
+  const discount = getDiscount();
+  const subtotal = total + discount;
 
   return (
     <div className="min-h-screen relative">
@@ -64,7 +51,7 @@ export default function CartPage() {
             )}
           </h1>
 
-          {items.length === 0 ? (
+          {loaded && items.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -79,23 +66,27 @@ export default function CartPage() {
             </motion.div>
           ) : (
             <div className="grid lg:grid-cols-[1fr_380px] gap-6 mt-6">
-              {/* Items list */}
+              {/* Items */}
               <div className="space-y-3">
                 {items.map((item, i) => (
                   <motion.div
-                    key={item.slug}
+                    key={item.productId}
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.08 }}
-                    exit={{ opacity: 0, x: -40 }}
+                    transition={{ delay: i * 0.06 }}
                     className="glass-light rounded-2xl p-4 flex items-center gap-4"
                   >
-                    {/* Category icon */}
+                    {/* Image */}
                     <div className={cn(
-                      'w-16 h-16 shrink-0 rounded-xl bg-gradient-to-br flex items-center justify-center text-2xl',
-                      categoryColor[item.category] || 'from-mystic-600/30 to-cosmic-600/30',
+                      'w-16 h-16 shrink-0 rounded-xl overflow-hidden relative',
+                      !item.imageUrl && 'bg-gradient-to-br flex items-center justify-center text-2xl',
+                      !item.imageUrl && (categoryColor[item.category] || 'from-mystic-600/30 to-cosmic-600/30'),
                     )}>
-                      {categoryIcon[item.category] || '✧'}
+                      {item.imageUrl ? (
+                        <Image src={item.imageUrl} alt={item.title} fill sizes="64px" className="object-cover" unoptimized />
+                      ) : (
+                        <span>{categoryIcon[item.category] || '✧'}</span>
+                      )}
                     </div>
 
                     {/* Info */}
@@ -104,10 +95,6 @@ export default function CartPage() {
                         {item.title}
                       </Link>
                       <p className="text-xs text-mystic-400 mt-0.5">{item.psychicName}</p>
-                      <div className="flex items-center gap-1 mt-1.5 text-mystic-500">
-                        <Clock className="w-3 h-3" />
-                        <span className="text-[11px]">{item.generationTimeMin}–{item.generationTimeMax} мин</span>
-                      </div>
                     </div>
 
                     {/* Price + remove */}
@@ -117,7 +104,7 @@ export default function CartPage() {
                         <span className="text-xs text-mystic-600 line-through">{formatPrice(item.oldPrice)}</span>
                       )}
                       <button
-                        onClick={() => removeItem(item.slug)}
+                        onClick={() => removeItem(item.productId)}
                         className="mt-1 w-7 h-7 rounded-full flex items-center justify-center text-mystic-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
                         aria-label="Удалить"
                       >
@@ -128,7 +115,7 @@ export default function CartPage() {
                 ))}
               </div>
 
-              {/* Order summary */}
+              {/* Summary */}
               <div className="lg:sticky lg:top-28 lg:self-start">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -158,24 +145,17 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  {/* Promo code */}
-                  <div className="flex gap-2 mb-5">
-                    <input
-                      type="text"
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value)}
-                      placeholder="Промокод"
-                      className="flex-1 bg-night-950/80 border border-mystic-700/30 rounded-xl px-3 py-2.5 text-sm text-white placeholder-mystic-600 focus:outline-none focus:border-mystic-500/50 transition-colors"
-                    />
-                    <button className="px-4 py-2.5 rounded-xl border border-mystic-500/40 text-sm text-mystic-300 hover:bg-mystic-500/10 transition-colors shrink-0">
-                      Применить
-                    </button>
-                  </div>
-
-                  {/* Checkout */}
-                  <button className="w-full btn-gold flex items-center justify-center gap-2 text-base py-4">
+                  <button className="w-full btn-gold flex items-center justify-center gap-2 text-base py-4 mb-3">
                     Перейти к оплате
                     <ArrowRight className="w-5 h-5" />
+                  </button>
+
+                  <button
+                    onClick={clearCart}
+                    className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-mystic-500 hover:text-rose-400 transition-colors"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    Очистить корзину
                   </button>
 
                   <div className="flex items-center justify-center gap-1.5 mt-4">

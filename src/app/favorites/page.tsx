@@ -22,6 +22,7 @@ const allProducts = products.map((p) => {
     slug: p.slug,
     title: p.title,
     shortDescription: p.shortDescription,
+    imageUrl: p.imageUrl,
     category: p.category,
     price: p.price,
     oldPrice: p.oldPrice || null,

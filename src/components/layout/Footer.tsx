@@ -9,14 +9,13 @@ const footerLinks = {
     { href: '/catalog?category=RUNES', label: 'Руны' },
   ],
   company: [
-    { href: '#', label: 'О нас' },
-    { href: '#', label: 'Контакты' },
-    { href: '#', label: 'Блог' },
+    { href: '/about', label: 'О нас' },
+    { href: '/contacts', label: 'Контакты' },
   ],
   legal: [
-    { href: '#', label: 'Пользовательское соглашение' },
-    { href: '#', label: 'Политика конфиденциальности' },
-    { href: '#', label: 'Возврат средств' },
+    { href: '/terms', label: 'Пользовательское соглашение' },
+    { href: '/privacy', label: 'Политика конфиденциальности' },
+    { href: '/refund', label: 'Возврат средств' },
   ],
 };
 
