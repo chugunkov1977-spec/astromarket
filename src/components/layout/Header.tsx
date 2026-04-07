@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useMemo, Suspense, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Search, Heart, User, Menu, X, ShoppingCart } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
@@ -302,10 +301,36 @@ function FavoritesBadge() {
 
 // ===================== HEADER =====================
 
+const PROMO_DISMISS_KEY = 'promo_dismissed_at';
+const PROMO_HIDE_DURATION = 4 * 60 * 60 * 1000; // 4 hours
+
+function usePromoBanner() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PROMO_DISMISS_KEY);
+      if (!raw) { setVisible(true); return; }
+      const elapsed = Date.now() - Number(raw);
+      setVisible(elapsed > PROMO_HIDE_DURATION);
+    } catch {
+      setVisible(true);
+    }
+  }, []);
+
+  const dismiss = useCallback(() => {
+    setVisible(false);
+    try { localStorage.setItem(PROMO_DISMISS_KEY, String(Date.now())); } catch {}
+  }, []);
+
+  return { visible, dismiss };
+}
+
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const promo = usePromoBanner();
   const { user } = useAuthStore();
   const pathname = usePathname();
 
@@ -325,14 +350,28 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50">
-      {/* ====== Top promotional bar ====== */}
+      {/* ====== Top promotional bar (dismissable) ====== */}
       <div
-        className="hidden md:flex items-center justify-center h-8"
-        style={{ background: 'linear-gradient(90deg, #1a0533, #2d1052, #1a0533)' }}
+        className={cn(
+          'hidden md:block overflow-hidden transition-all duration-300',
+          promo.visible ? 'max-h-10 opacity-100' : 'max-h-0 opacity-0',
+        )}
       >
-        <p className="text-xs text-gold-400/80 tracking-wide">
-          ✧ Бесплатная карта дня для новых пользователей ✧
-        </p>
+        <div
+          className="flex items-center justify-center h-8 relative"
+          style={{ background: 'linear-gradient(90deg, #1a0533, #2d1052, #1a0533)' }}
+        >
+          <p className="text-xs text-gold-400/80 tracking-wide">
+            ✧ Бесплатная карта дня для новых пользователей ✧
+          </p>
+          <button
+            onClick={promo.dismiss}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-gold-400/60 hover:text-gold-400 transition-colors"
+            aria-label="Закрыть"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* ====== Main header bar ====== */}
@@ -342,23 +381,11 @@ export default function Header() {
       >
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            {/* ---- Logo ---- */}
-            <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-              <Image
-                src="/images/logo.png"
-                alt="AstroMarket"
-                width={40}
-                height={40}
-                className="w-10 h-10 rounded-lg group-hover:scale-105 transition-transform duration-200"
-              />
-              <span className="font-display text-xl font-bold leading-none tracking-tight">
+            {/* ---- Logo (text only) ---- */}
+            <Link href="/" className="shrink-0">
+              <span className="font-display text-2xl font-bold tracking-tight">
                 <span className="text-white">Astro</span>
-                <span
-                  className="bg-clip-text text-transparent"
-                  style={{ backgroundImage: 'linear-gradient(135deg, #fbbf24, #f59e0b, #d97706)' }}
-                >
-                  Market
-                </span>
+                <span className="text-gradient-gold">Market</span>
               </span>
             </Link>
 

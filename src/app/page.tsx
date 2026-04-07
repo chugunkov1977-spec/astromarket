@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/catalog/ProductCard';
@@ -43,12 +44,12 @@ const productsList = products.map((p) => {
 });
 
 const categories = [
-  { key: 'TAROT', label: 'Таро', icon: '🃏' },
-  { key: 'ASTROLOGY', label: 'Астрология', icon: '⭐' },
-  { key: 'NUMEROLOGY', label: 'Нумерология', icon: '🔢' },
-  { key: 'RUNES', label: 'Руны', icon: 'ᚱ' },
-  { key: 'MEDITATION', label: 'Медитации', icon: '🧘' },
-  { key: 'COURSE', label: 'Курсы', icon: '📚' },
+  { key: 'TAROT', label: 'Таро', image: '/images/categories/tarot.jpeg' },
+  { key: 'ASTROLOGY', label: 'Астрология', image: '/images/categories/astrology.jpeg' },
+  { key: 'NUMEROLOGY', label: 'Нумерология', image: '/images/categories/numerology.jpeg' },
+  { key: 'RUNES', label: 'Руны', image: '/images/categories/runes.png' },
+  { key: 'MEDITATION', label: 'Медитации', image: '/images/categories/meditation.png' },
+  { key: 'COURSE', label: 'Курсы', image: '/images/categories/cources.jpeg' },
 ];
 
 // Топ-10 по заказам
@@ -87,19 +88,27 @@ export default function HomePage() {
 
       <main className="relative z-10">
         {/* ===== ПОЛОСА КАТЕГОРИЙ ===== */}
-        <section className="border-b border-mystic-800/20 bg-night-950/80">
+        <section className="border-y border-mystic-800/15 py-4">
           <div className="max-w-7xl mx-auto px-4">
-            <div className="flex items-center gap-6 py-3 overflow-x-auto scrollbar-hide md:justify-center">
+            <div className="flex flex-row gap-3 justify-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {categories.map((cat) => (
                 <Link
                   key={cat.key}
                   href={`/catalog?category=${cat.key}`}
-                  className="flex flex-col items-center gap-1.5 shrink-0 group"
+                  className="relative shrink-0 w-[160px] h-[105px] lg:w-[190px] lg:h-[120px] rounded-xl overflow-hidden border border-mystic-700/20 hover:border-mystic-500/30 hover:shadow-lg hover:shadow-mystic-500/10 group transition-all duration-300"
                 >
-                  <div className="w-[60px] h-[60px] rounded-full bg-mystic-800/30 flex items-center justify-center text-2xl group-hover:bg-mystic-500/30 transition-colors duration-200">
-                    {cat.icon}
-                  </div>
-                  <span className="text-xs text-mystic-400 group-hover:text-mystic-200 transition-colors">
+                  <Image
+                    src={cat.image}
+                    alt={cat.label}
+                    fill
+                    sizes="(min-width: 1024px) 190px, 160px"
+                    className="object-cover transition-all duration-300 group-hover:scale-105 group-hover:brightness-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                  <span
+                    className="absolute bottom-0 left-0 right-0 px-3 pb-2 text-sm font-semibold text-white"
+                    style={{ textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}
+                  >
                     {cat.label}
                   </span>
                 </Link>
