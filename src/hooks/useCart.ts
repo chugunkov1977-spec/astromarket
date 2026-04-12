@@ -38,9 +38,9 @@ function getAuthToken(): string | null {
   }
 }
 
-function apiCall(method: string, body: any, token: string) {
+function cartApiPost(body: Record<string, unknown>, token: string) {
   fetch('/api/cart', {
-    method,
+    method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(body),
   }).catch(() => {});
@@ -57,7 +57,7 @@ export const useCartStore = create<CartState>()(
         if (current.some((i) => i.productId === item.productId)) return;
         set({ items: [...current, { ...item, quantity: 1 }], loaded: true });
         const t = token || getAuthToken();
-        if (t) apiCall('POST', { productSlug: item.slug }, t);
+        if (t) cartApiPost({ action: 'add', productSlug: item.slug }, t);
       },
 
       removeItem: (productId, token) => {
@@ -65,13 +65,13 @@ export const useCartStore = create<CartState>()(
         const next = get().items.filter((i) => i.productId !== productId);
         set({ items: next });
         const t = token || getAuthToken();
-        if (t && item) apiCall('DELETE', { productSlug: item.slug }, t);
+        if (t && item) cartApiPost({ action: 'remove', productSlug: item.slug }, t);
       },
 
       clearCart: (token) => {
         set({ items: [] });
         const t = token || getAuthToken();
-        if (t) apiCall('DELETE', { clearAll: true }, t);
+        if (t) cartApiPost({ action: 'clear' }, t);
       },
 
       getTotal: () => get().items.reduce((sum, i) => sum + i.price, 0),
@@ -91,17 +91,17 @@ export const useCartStore = create<CartState>()(
               slug: p.slug,
               title: p.title,
               price: p.price,
-              oldPrice: p.oldPrice,
+              oldPrice: p.oldPrice || null,
               imageUrl: p.imageUrl || null,
               psychicName: p.psychicName || '',
               category: p.category,
               quantity: 1,
             }));
-            // Merge: server items + local items not on server
-            const serverSlugs = new Set(serverItems.map((i) => i.slug));
-            const localOnly = get().items.filter((i) => !serverSlugs.has(i.slug));
+            // Find local items not on server
+            const serverSlugList = serverItems.map((i) => i.slug);
+            const localOnly = get().items.filter((i) => serverSlugList.indexOf(i.slug) === -1);
             // Upload local-only items to server
-            localOnly.forEach((i) => apiCall('POST', { productSlug: i.slug }, token));
+            localOnly.forEach((i) => cartApiPost({ action: 'add', productSlug: i.slug }, token));
             set({ items: [...serverItems, ...localOnly], loaded: true });
           } else {
             set({ loaded: true });

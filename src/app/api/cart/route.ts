@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST — add item to cart
+// POST — add, remove, or clear cart items
+// body: { action: 'add' | 'remove' | 'clear', productSlug?: string }
 export async function POST(request: NextRequest) {
   const userId = getUserIdFromRequest(request);
   if (!userId) {
@@ -34,51 +35,37 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { productSlug } = await request.json();
+    const body = await request.json();
+    const { action, productSlug } = body;
+
+    if (action === 'clear') {
+      await prisma.cartItem.deleteMany({ where: { userId } });
+      return NextResponse.json({ ok: true, action: 'cleared' });
+    }
+
     if (!productSlug) {
       return NextResponse.json({ error: 'productSlug обязателен' }, { status: 400 });
     }
 
-    await prisma.cartItem.upsert({
-      where: { userId_productSlug: { userId, productSlug } },
-      create: { userId, productSlug },
-      update: {},
-    });
+    if (action === 'add') {
+      await prisma.cartItem.upsert({
+        where: { userId_productSlug: { userId, productSlug } },
+        create: { userId, productSlug },
+        update: {},
+      });
+      return NextResponse.json({ ok: true, action: 'added', productSlug });
+    }
 
-    return NextResponse.json({ ok: true, productSlug });
+    if (action === 'remove') {
+      await prisma.cartItem.deleteMany({
+        where: { userId, productSlug },
+      });
+      return NextResponse.json({ ok: true, action: 'removed', productSlug });
+    }
+
+    return NextResponse.json({ error: 'Неизвестное действие' }, { status: 400 });
   } catch (error) {
     console.error('Cart POST error:', error);
-    return NextResponse.json({ error: 'Внутренняя ошибка' }, { status: 500 });
-  }
-}
-
-// DELETE — remove item or clear cart
-export async function DELETE(request: NextRequest) {
-  const userId = getUserIdFromRequest(request);
-  if (!userId) {
-    return NextResponse.json({ error: 'Требуется авторизация' }, { status: 401 });
-  }
-
-  try {
-    const body = await request.json();
-
-    if (body.clearAll) {
-      await prisma.cartItem.deleteMany({ where: { userId } });
-      return NextResponse.json({ ok: true, cleared: true });
-    }
-
-    const { productSlug } = body;
-    if (!productSlug) {
-      return NextResponse.json({ error: 'productSlug обязателен' }, { status: 400 });
-    }
-
-    await prisma.cartItem.deleteMany({
-      where: { userId, productSlug },
-    });
-
-    return NextResponse.json({ ok: true, removed: productSlug });
-  } catch (error) {
-    console.error('Cart DELETE error:', error);
     return NextResponse.json({ error: 'Внутренняя ошибка' }, { status: 500 });
   }
 }
