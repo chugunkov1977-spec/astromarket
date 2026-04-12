@@ -7,6 +7,7 @@ import { Star, Clock, Heart, ShoppingCart, Check } from 'lucide-react';
 import { cn, formatPrice } from '@/lib/utils';
 import { useFavoritesStore } from '@/hooks/useFavorites';
 import { useCartStore } from '@/hooks/useCart';
+import { useToastStore } from '@/hooks/useToast';
 
 interface ProductCardProps {
   product: {
@@ -83,9 +84,15 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
 
   const inCart = cartItems.some((i) => i.productId === product.id);
 
+  const showToast = useToastStore((s) => s.showToast);
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (inCart) {
+      showToast('Товар уже в корзине', 'info');
+      return;
+    }
     addToCart({
       productId: product.id,
       slug: product.slug,
@@ -96,6 +103,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
       psychicName: product.psychic?.name || '',
       category: product.category,
     });
+    showToast('Добавлено в корзину', 'success');
   };
 
   const hasImage = !!product.imageUrl;

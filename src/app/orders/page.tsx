@@ -25,14 +25,20 @@ export default function OrdersPage() {
   const [expandedResult, setExpandedResult] = useState<string | null>(null);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const orders = useOrdersStore((s) => s.orders);
-  const getActiveOrders = useOrdersStore((s) => s.getActiveOrders);
-  const getCompletedOrders = useOrdersStore((s) => s.getCompletedOrders);
+  const [, forceUpdate] = useState(0);
 
   useEffect(() => { setMounted(true); }, []);
 
-  // Re-render when orders update (processing -> completed)
-  const activeOrders = getActiveOrders();
-  const completedOrders = getCompletedOrders();
+  // Poll for order status changes (setTimeout fires outside React)
+  useEffect(() => {
+    const hasProcessing = orders.some((o) => o.status === 'processing');
+    if (!hasProcessing) return;
+    const interval = setInterval(() => forceUpdate((n) => n + 1), 1000);
+    return () => clearInterval(interval);
+  }, [orders]);
+
+  const activeOrders = orders.filter((o) => o.status === 'processing');
+  const completedOrders = orders.filter((o) => o.status === 'completed');
 
   if (mounted && !isAuthenticated) {
     return (

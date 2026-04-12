@@ -11,6 +11,7 @@ import Footer from '@/components/layout/Footer';
 import { useCartStore } from '@/hooks/useCart';
 import { useAuthStore } from '@/hooks/useAuth';
 import { useOrdersStore } from '@/hooks/useOrders';
+import { useToastStore } from '@/hooks/useToast';
 import { cn, formatPrice } from '@/lib/utils';
 
 const categoryIcon: Record<string, string> = {
@@ -35,6 +36,7 @@ export default function CartPage() {
   const loadFromStorage = useCartStore((s) => s.loadFromStorage);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const createOrder = useOrdersStore((s) => s.createOrder);
+  const showToast = useToastStore((s) => s.showToast);
   const [authMounted, setAuthMounted] = useState(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
 
@@ -52,6 +54,7 @@ export default function CartPage() {
     createOrder(items, {});
     clearCart();
     setCheckoutSuccess(true);
+    showToast('Заказ оформлен!', 'success');
     setTimeout(() => router.push('/orders'), 1000);
   };
 
@@ -132,7 +135,7 @@ export default function CartPage() {
                         <span className="text-xs text-mystic-600 line-through">{formatPrice(item.oldPrice)}</span>
                       )}
                       <button
-                        onClick={() => removeItem(item.productId)}
+                        onClick={() => { removeItem(item.productId); showToast('Удалено из корзины', 'info'); }}
                         className="mt-1 w-7 h-7 rounded-full flex items-center justify-center text-mystic-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
                         aria-label="Удалить"
                       >

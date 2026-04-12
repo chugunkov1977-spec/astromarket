@@ -11,8 +11,9 @@ import { useFavoritesStore } from '@/hooks/useFavorites';
 import { useAuthStore } from '@/hooks/useAuth';
 import { useCartStore } from '@/hooks/useCart';
 import { useOrdersStore } from '@/hooks/useOrders';
+import { useToastStore } from '@/hooks/useToast';
 import { psychics, products, reviewTexts } from '@/data/seed-data';
-import { Star, Clock, MessageCircle, Shield, Heart, ArrowLeft, ShoppingBag, ShoppingCart, User, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { Star, Clock, MessageCircle, Shield, Heart, ArrowLeft, ShoppingBag, ShoppingCart, User, Check, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { cn, formatPrice, categoryLabels, themeLabels } from '@/lib/utils';
 
 // Трансформация данных (то же что на главной)
@@ -53,7 +54,76 @@ function generateReviews(productCategory: string, count: number) {
   }));
 }
 
-function CartButtons({ product }: { product: { id: string; slug: string; title: string; price: number; oldPrice: number | null; imageUrl: string; category: string; psychic?: { name: string } | null } }) {
+// ── Client data modal ──
+
+const fieldLabels: Record<string, { label: string; placeholder: string; type: string }> = {
+  name: { label: 'Ваше имя', placeholder: 'Как к вам обращаться', type: 'text' },
+  birthDate: { label: 'Дата рождения', placeholder: '', type: 'date' },
+  birthTime: { label: 'Время рождения', placeholder: 'Например: 14:30', type: 'time' },
+  birthPlace: { label: 'Место рождения', placeholder: 'Город, страна', type: 'text' },
+  question: { label: 'Ваш вопрос', placeholder: 'Опишите ситуацию или задайте вопрос...', type: 'textarea' },
+  partnerName: { label: 'Имя партнёра', placeholder: 'Как зовут вашего партнёра', type: 'text' },
+  partnerBirthDate: { label: 'Дата рождения партнёра', placeholder: '', type: 'date' },
+  zodiacSign: { label: 'Знак зодиака', placeholder: 'Например: Овен', type: 'text' },
+};
+
+function ClientDataModal({ inputFields, onSubmit, onClose }: { inputFields: string[]; onSubmit: (data: Record<string, string>) => void; onClose: () => void }) {
+  const [data, setData] = useState<Record<string, string>>({});
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(data);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-2xl glass border border-mystic-700/20 p-6 shadow-2xl">
+        <button onClick={onClose} className="absolute top-4 right-4 text-mystic-500 hover:text-white transition-colors">
+          <X className="w-5 h-5" />
+        </button>
+
+        <h3 className="font-display text-lg font-bold text-white mb-1">Расскажите о себе</h3>
+        <p className="text-xs text-mystic-500 mb-5">Заполните данные для персонального расклада</p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {inputFields.map((field) => {
+            const meta = fieldLabels[field] || { label: field, placeholder: '', type: 'text' };
+            return (
+              <div key={field}>
+                <label className="block text-sm text-mystic-300 mb-1.5">{meta.label}</label>
+                {meta.type === 'textarea' ? (
+                  <textarea
+                    value={data[field] || ''}
+                    onChange={(e) => setData((d) => ({ ...d, [field]: e.target.value }))}
+                    placeholder={meta.placeholder}
+                    rows={3}
+                    className="w-full px-4 py-3 rounded-xl bg-night-950/60 border border-mystic-800/30 text-sm text-white placeholder-mystic-600 focus:outline-none focus:border-mystic-500/50 transition-all resize-none"
+                  />
+                ) : (
+                  <input
+                    type={meta.type}
+                    value={data[field] || ''}
+                    onChange={(e) => setData((d) => ({ ...d, [field]: e.target.value }))}
+                    placeholder={meta.placeholder}
+                    className="w-full px-4 py-3 rounded-xl bg-night-950/60 border border-mystic-800/30 text-sm text-white placeholder-mystic-600 focus:outline-none focus:border-mystic-500/50 transition-all"
+                  />
+                )}
+              </div>
+            );
+          })}
+
+          <button type="submit" className="w-full btn-gold flex items-center justify-center gap-2 py-3.5 mt-2">
+            <ShoppingBag className="w-4 h-4" />
+            Отправить заказ
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function CartButtons({ product }: { product: { id: string; slug: string; title: string; price: number; oldPrice: number | null; imageUrl: string; category: string; psychic?: { name: string } | null; inputFields?: string[] } }) {
   const router = useRouter();
   const cartItems = useCartStore((s) => s.items);
   const addItem = useCartStore((s) => s.addItem);
@@ -61,6 +131,8 @@ function CartButtons({ product }: { product: { id: string; slug: string; title: 
   const loadCart = useCartStore((s) => s.loadFromStorage);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const createOrder = useOrdersStore((s) => s.createOrder);
+  const showToast = useToastStore((s) => s.showToast);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     if (!cartLoaded) loadCart();
@@ -84,12 +156,34 @@ function CartButtons({ product }: { product: { id: string; slug: string; title: 
       router.push('/auth');
       return;
     }
-    createOrder([{ ...cartData, quantity: 1 }], {});
+    setShowModal(true);
+  };
+
+  const handleOrderSubmit = (clientData: Record<string, string>) => {
+    createOrder([{ ...cartData, quantity: 1 }], clientData);
+    showToast('Заказ оформлен!', 'success');
+    setShowModal(false);
     router.push('/orders');
+  };
+
+  const handleAddToCart = () => {
+    if (inCart) {
+      showToast('Товар уже в корзине', 'info');
+      return;
+    }
+    addItem(cartData);
+    showToast('Добавлено в корзину', 'success');
   };
 
   return (
     <>
+      {showModal && (
+        <ClientDataModal
+          inputFields={product.inputFields || ['name', 'question']}
+          onSubmit={handleOrderSubmit}
+          onClose={() => setShowModal(false)}
+        />
+      )}
       <button
         onClick={handleBuyNow}
         className="w-full btn-gold flex items-center justify-center gap-2 text-base py-4 mb-2"
@@ -98,7 +192,7 @@ function CartButtons({ product }: { product: { id: string; slug: string; title: 
         Купить сейчас
       </button>
       <button
-        onClick={() => addItem(cartData)}
+        onClick={handleAddToCart}
         className={cn(
           'w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 mb-3',
           inCart
