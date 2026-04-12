@@ -8,7 +8,9 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ProductCard from '@/components/catalog/ProductCard';
 import { useFavoritesStore } from '@/hooks/useFavorites';
+import { useAuthStore } from '@/hooks/useAuth';
 import { useCartStore } from '@/hooks/useCart';
+import { useOrdersStore } from '@/hooks/useOrders';
 import { psychics, products, reviewTexts } from '@/data/seed-data';
 import { Star, Clock, MessageCircle, Shield, Heart, ArrowLeft, ShoppingBag, ShoppingCart, User, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn, formatPrice, categoryLabels, themeLabels } from '@/lib/utils';
@@ -57,6 +59,8 @@ function CartButtons({ product }: { product: { id: string; slug: string; title: 
   const addItem = useCartStore((s) => s.addItem);
   const cartLoaded = useCartStore((s) => s.loaded);
   const loadCart = useCartStore((s) => s.loadFromStorage);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const createOrder = useOrdersStore((s) => s.createOrder);
 
   useEffect(() => {
     if (!cartLoaded) loadCart();
@@ -75,10 +79,19 @@ function CartButtons({ product }: { product: { id: string; slug: string; title: 
     category: product.category,
   };
 
+  const handleBuyNow = () => {
+    if (!isAuthenticated) {
+      router.push('/auth');
+      return;
+    }
+    createOrder([{ ...cartData, quantity: 1 }], {});
+    router.push('/orders');
+  };
+
   return (
     <>
       <button
-        onClick={() => { addItem(cartData); router.push('/cart'); }}
+        onClick={handleBuyNow}
         className="w-full btn-gold flex items-center justify-center gap-2 text-base py-4 mb-2"
       >
         <ShoppingBag className="w-5 h-5" />

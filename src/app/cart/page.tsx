@@ -10,6 +10,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useCartStore } from '@/hooks/useCart';
 import { useAuthStore } from '@/hooks/useAuth';
+import { useOrdersStore } from '@/hooks/useOrders';
 import { cn, formatPrice } from '@/lib/utils';
 
 const categoryIcon: Record<string, string> = {
@@ -33,7 +34,9 @@ export default function CartPage() {
   const loaded = useCartStore((s) => s.loaded);
   const loadFromStorage = useCartStore((s) => s.loadFromStorage);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const createOrder = useOrdersStore((s) => s.createOrder);
   const [authMounted, setAuthMounted] = useState(false);
+  const [checkoutSuccess, setCheckoutSuccess] = useState(false);
 
   useEffect(() => { setAuthMounted(true); }, []);
   useEffect(() => {
@@ -46,7 +49,10 @@ export default function CartPage() {
       router.push('/auth');
       return;
     }
-    // placeholder for checkout
+    createOrder(items, {});
+    clearCart();
+    setCheckoutSuccess(true);
+    setTimeout(() => router.push('/orders'), 1000);
   };
 
   const total = getTotal();
@@ -66,7 +72,14 @@ export default function CartPage() {
             )}
           </h1>
 
-          {loaded && items.length === 0 ? (
+          {checkoutSuccess && (
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl p-4">
+              <span className="text-lg">✨</span>
+              <span className="text-sm font-medium">Заказ оформлен! Перенаправляем на страницу заказов...</span>
+            </motion.div>
+          )}
+
+          {loaded && items.length === 0 && !checkoutSuccess ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
