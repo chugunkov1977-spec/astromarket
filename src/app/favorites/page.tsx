@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
 import Header from '@/components/layout/Header';
@@ -39,11 +38,6 @@ const allProducts = products.map((p) => {
 export default function FavoritesPage() {
   const favorites = useFavoritesStore((s) => s.favorites);
   const loaded = useFavoritesStore((s) => s.loaded);
-  const loadFromStorage = useFavoritesStore((s) => s.loadFromStorage);
-
-  useEffect(() => {
-    if (!loaded) loadFromStorage();
-  }, [loaded, loadFromStorage]);
 
   const favProducts = allProducts.filter((p) => favorites.includes(p.slug));
 

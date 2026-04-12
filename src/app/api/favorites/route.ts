@@ -22,7 +22,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST — toggle favorite
+// POST — add, remove, or toggle favorite
+// body: { productSlug, action?: 'add' | 'remove' | 'toggle' }
 export async function POST(request: NextRequest) {
   const userId = getUserIdFromRequest(request);
   if (!userId) {
@@ -30,7 +31,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { productSlug } = await request.json();
+    const body = await request.json();
+    const { productSlug, action = 'toggle' } = body;
     if (!productSlug) {
       return NextResponse.json({ error: 'productSlug обязателен' }, { status: 400 });
     }
@@ -39,6 +41,21 @@ export async function POST(request: NextRequest) {
       where: { userId_productSlug: { userId, productSlug } },
     });
 
+    if (action === 'add') {
+      if (!existing) {
+        await prisma.favorite.create({ data: { userId, productSlug } });
+      }
+      return NextResponse.json({ action: 'added', productSlug });
+    }
+
+    if (action === 'remove') {
+      if (existing) {
+        await prisma.favorite.delete({ where: { id: existing.id } });
+      }
+      return NextResponse.json({ action: 'removed', productSlug });
+    }
+
+    // toggle (default)
     if (existing) {
       await prisma.favorite.delete({ where: { id: existing.id } });
       return NextResponse.json({ action: 'removed', productSlug });

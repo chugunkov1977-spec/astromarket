@@ -127,17 +127,11 @@ function CartButtons({ product }: { product: { id: string; slug: string; title: 
   const router = useRouter();
   const cartItems = useCartStore((s) => s.items);
   const addItem = useCartStore((s) => s.addItem);
-  const cartLoaded = useCartStore((s) => s.loaded);
-  const loadCart = useCartStore((s) => s.loadFromStorage);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const authToken = useAuthStore((s) => s.token);
   const createOrder = useOrdersStore((s) => s.createOrder);
   const showToast = useToastStore((s) => s.showToast);
   const [showModal, setShowModal] = useState(false);
-
-  useEffect(() => {
-    if (!cartLoaded) loadCart();
-  }, [cartLoaded, loadCart]);
 
   const inCart = cartItems.some((i) => i.productId === product.id);
 
@@ -214,13 +208,6 @@ function CartButtons({ product }: { product: { id: string; slug: string; title: 
 function FavoriteButton({ slug }: { slug: string }) {
   const favorites = useFavoritesStore((s) => s.favorites);
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
-  const loadFromStorage = useFavoritesStore((s) => s.loadFromStorage);
-  const loaded = useFavoritesStore((s) => s.loaded);
-
-  useEffect(() => {
-    if (!loaded) loadFromStorage();
-  }, [loaded, loadFromStorage]);
-
   const isFav = favorites.includes(slug);
 
   return (

@@ -1,6 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 export interface CartItem {
   productId: string;
@@ -17,62 +18,105 @@ export interface CartItem {
 interface CartState {
   items: CartItem[];
   loaded: boolean;
-  addItem: (item: Omit<CartItem, 'quantity'>) => void;
-  removeItem: (productId: string) => void;
-  clearCart: () => void;
+  addItem: (item: Omit<CartItem, 'quantity'>, token?: string | null) => void;
+  removeItem: (productId: string, token?: string | null) => void;
+  clearCart: (token?: string | null) => void;
   getTotal: () => number;
   getDiscount: () => number;
   getItemCount: () => number;
-  loadFromStorage: () => void;
+  syncCart: (token: string) => Promise<void>;
 }
 
-const STORAGE_KEY = 'astro_cart';
-
-function persist(items: CartItem[]) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
+function getAuthToken(): string | null {
+  try {
+    const raw = localStorage.getItem('astro_auth');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.state?.token || null;
+  } catch {
+    return null;
+  }
 }
 
-export const useCartStore = create<CartState>((set, get) => ({
-  items: [],
-  loaded: false,
+function apiCall(method: string, body: any, token: string) {
+  fetch('/api/cart', {
+    method,
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  }).catch(() => {});
+}
 
-  addItem: (item) => {
-    const current = get().items;
-    if (current.some((i) => i.productId === item.productId)) return;
-    const next = [...current, { ...item, quantity: 1 }];
-    set({ items: next });
-    persist(next);
-  },
+export const useCartStore = create<CartState>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      loaded: false,
 
-  removeItem: (productId) => {
-    const next = get().items.filter((i) => i.productId !== productId);
-    set({ items: next });
-    persist(next);
-  },
+      addItem: (item, token) => {
+        const current = get().items;
+        if (current.some((i) => i.productId === item.productId)) return;
+        set({ items: [...current, { ...item, quantity: 1 }], loaded: true });
+        const t = token || getAuthToken();
+        if (t) apiCall('POST', { productSlug: item.slug }, t);
+      },
 
-  clearCart: () => {
-    set({ items: [] });
-    persist([]);
-  },
+      removeItem: (productId, token) => {
+        const item = get().items.find((i) => i.productId === productId);
+        const next = get().items.filter((i) => i.productId !== productId);
+        set({ items: next });
+        const t = token || getAuthToken();
+        if (t && item) apiCall('DELETE', { productSlug: item.slug }, t);
+      },
 
-  getTotal: () => get().items.reduce((sum, i) => sum + i.price, 0),
+      clearCart: (token) => {
+        set({ items: [] });
+        const t = token || getAuthToken();
+        if (t) apiCall('DELETE', { clearAll: true }, t);
+      },
 
-  getDiscount: () =>
-    get().items.reduce((sum, i) => (i.oldPrice ? sum + (i.oldPrice - i.price) : sum), 0),
+      getTotal: () => get().items.reduce((sum, i) => sum + i.price, 0),
+      getDiscount: () => get().items.reduce((sum, i) => (i.oldPrice ? sum + (i.oldPrice - i.price) : sum), 0),
+      getItemCount: () => get().items.length,
 
-  getItemCount: () => get().items.length,
-
-  loadFromStorage: () => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          set({ items: parsed, loaded: true });
-          return;
+      syncCart: async (token) => {
+        try {
+          const res = await fetch('/api/cart', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!res.ok) { set({ loaded: true }); return; }
+          const data = await res.json();
+          if (data.items && Array.isArray(data.items)) {
+            const serverItems: CartItem[] = data.items.map((p: any) => ({
+              productId: p.slug,
+              slug: p.slug,
+              title: p.title,
+              price: p.price,
+              oldPrice: p.oldPrice,
+              imageUrl: p.imageUrl || null,
+              psychicName: p.psychicName || '',
+              category: p.category,
+              quantity: 1,
+            }));
+            // Merge: server items + local items not on server
+            const serverSlugs = new Set(serverItems.map((i) => i.slug));
+            const localOnly = get().items.filter((i) => !serverSlugs.has(i.slug));
+            // Upload local-only items to server
+            localOnly.forEach((i) => apiCall('POST', { productSlug: i.slug }, token));
+            set({ items: [...serverItems, ...localOnly], loaded: true });
+          } else {
+            set({ loaded: true });
+          }
+        } catch {
+          set({ loaded: true });
         }
-      }
-    } catch {}
-    set({ loaded: true });
-  },
-}));
+      },
+    }),
+    {
+      name: 'astro_cart',
+      partialize: (state) => ({ items: state.items }),
+      onRehydrateStorage: () => (state) => {
+        if (state) state.loaded = true;
+      },
+    },
+  ),
+);

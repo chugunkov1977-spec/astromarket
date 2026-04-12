@@ -58,13 +58,6 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
 
   const favorites = useFavoritesStore((s) => s.favorites);
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
-  const loadFromStorage = useFavoritesStore((s) => s.loadFromStorage);
-  const loaded = useFavoritesStore((s) => s.loaded);
-
-  useEffect(() => {
-    if (!loaded) loadFromStorage();
-  }, [loaded, loadFromStorage]);
-
   const isFav = favorites.includes(product.slug);
 
   const handleFavorite = (e: React.MouseEvent) => {
@@ -75,12 +68,6 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
 
   const cartItems = useCartStore((s) => s.items);
   const addToCart = useCartStore((s) => s.addItem);
-  const cartLoaded = useCartStore((s) => s.loaded);
-  const loadCart = useCartStore((s) => s.loadFromStorage);
-
-  useEffect(() => {
-    if (!cartLoaded) loadCart();
-  }, [cartLoaded, loadCart]);
 
   const inCart = cartItems.some((i) => i.productId === product.id);
 

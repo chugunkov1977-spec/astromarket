@@ -32,8 +32,6 @@ export default function CartPage() {
   const clearCart = useCartStore((s) => s.clearCart);
   const getTotal = useCartStore((s) => s.getTotal);
   const getDiscount = useCartStore((s) => s.getDiscount);
-  const loaded = useCartStore((s) => s.loaded);
-  const loadFromStorage = useCartStore((s) => s.loadFromStorage);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const authToken = useAuthStore((s) => s.token);
   const createOrder = useOrdersStore((s) => s.createOrder);
@@ -45,9 +43,6 @@ export default function CartPage() {
   const [promoError, setPromoError] = useState('');
 
   useEffect(() => { setAuthMounted(true); }, []);
-  useEffect(() => {
-    if (!loaded) loadFromStorage();
-  }, [loaded, loadFromStorage]);
 
   const handleApplyPromo = () => {
     setPromoError('');
@@ -115,7 +110,7 @@ export default function CartPage() {
             </motion.div>
           )}
 
-          {loaded && items.length === 0 && !checkoutSuccess ? (
+          {items.length === 0 && !checkoutSuccess ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -252,7 +247,7 @@ export default function CartPage() {
                   </button>
 
                   <button
-                    onClick={clearCart}
+                    onClick={() => clearCart()}
                     className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-mystic-500 hover:text-rose-400 transition-colors"
                   >
                     <Trash2 className="w-3 h-3" />

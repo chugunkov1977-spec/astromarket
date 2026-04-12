@@ -22,6 +22,14 @@ interface AuthState {
   logout: () => void;
 }
 
+async function syncStoresAfterAuth(token: string) {
+  // Dynamically import to avoid circular deps
+  const { useCartStore } = await import('./useCart');
+  const { useFavoritesStore } = await import('./useFavorites');
+  useCartStore.getState().syncCart(token).catch(() => {});
+  useFavoritesStore.getState().syncFavorites(token).catch(() => {});
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -45,6 +53,7 @@ export const useAuthStore = create<AuthState>()(
             return false;
           }
           set({ user: data.user, token: data.token, isAuthenticated: true, isLoading: false, error: null });
+          syncStoresAfterAuth(data.token);
           return true;
         } catch {
           set({ error: 'Ошибка сети. Попробуйте позже.', isLoading: false });
@@ -66,6 +75,7 @@ export const useAuthStore = create<AuthState>()(
             return false;
           }
           set({ user: data.user, token: data.token, isAuthenticated: true, isLoading: false, error: null });
+          syncStoresAfterAuth(data.token);
           return true;
         } catch {
           set({ error: 'Ошибка сети. Попробуйте позже.', isLoading: false });

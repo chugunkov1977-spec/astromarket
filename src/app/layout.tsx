@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import ToastContainer from '@/components/ui/Toast';
+import SyncProvider from '@/components/providers/SyncProvider';
 
 export const metadata: Metadata = {
   title: 'AstroMarket — AI-маркетплейс эзотерических услуг',
@@ -25,10 +26,12 @@ export default function RootLayout({
     <html lang="ru">
       <body className="min-h-screen">
         <div className="particles-bg" />
-        <div className="relative z-10">
-          {children}
-        </div>
-        <ToastContainer />
+        <SyncProvider>
+          <div className="relative z-10">
+            {children}
+          </div>
+          <ToastContainer />
+        </SyncProvider>
       </body>
     </html>
   );

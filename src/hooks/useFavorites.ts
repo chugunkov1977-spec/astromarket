@@ -10,8 +10,26 @@ interface FavoritesState {
   removeFavorite: (slug: string, token?: string | null) => void;
   toggleFavorite: (slug: string, token?: string | null) => void;
   isFavorite: (slug: string) => boolean;
-  loadFromStorage: () => void;
-  syncWithServer: (token: string) => Promise<void>;
+  syncFavorites: (token: string) => Promise<void>;
+}
+
+function getAuthToken(): string | null {
+  try {
+    const raw = localStorage.getItem('astro_auth');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.state?.token || null;
+  } catch {
+    return null;
+  }
+}
+
+function apiFav(slug: string, action: 'add' | 'remove', token: string) {
+  fetch('/api/favorites', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ productSlug: slug, action }),
+  }).catch(() => {});
 }
 
 export const useFavoritesStore = create<FavoritesState>()(
@@ -24,25 +42,14 @@ export const useFavoritesStore = create<FavoritesState>()(
         const current = get().favorites;
         if (current.includes(slug)) return;
         set({ favorites: [...current, slug] });
-        // Sync to API
-        if (token) {
-          fetch('/api/favorites', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ productSlug: slug }),
-          }).catch(() => {});
-        }
+        const t = token || getAuthToken();
+        if (t) apiFav(slug, 'add', t);
       },
 
       removeFavorite: (slug, token) => {
         set({ favorites: get().favorites.filter((s) => s !== slug) });
-        if (token) {
-          fetch('/api/favorites', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ productSlug: slug }),
-          }).catch(() => {});
-        }
+        const t = token || getAuthToken();
+        if (t) apiFav(slug, 'remove', t);
       },
 
       toggleFavorite: (slug, token) => {
@@ -55,23 +62,28 @@ export const useFavoritesStore = create<FavoritesState>()(
 
       isFavorite: (slug) => get().favorites.includes(slug),
 
-      loadFromStorage: () => {
-        set({ loaded: true });
-      },
-
-      syncWithServer: async (token) => {
+      syncFavorites: async (token) => {
         try {
           const res = await fetch('/api/favorites', {
             headers: { Authorization: `Bearer ${token}` },
           });
-          if (!res.ok) return;
+          if (!res.ok) { set({ loaded: true }); return; }
           const data = await res.json();
           if (data.favorites && Array.isArray(data.favorites)) {
-            // Merge server + local
-            const merged = Array.from(new Set([...data.favorites, ...get().favorites]));
-            set({ favorites: merged });
+            // Merge server + local, deduplicate
+            const local = get().favorites;
+            const serverSet = new Set(data.favorites as string[]);
+            const localOnly = local.filter((s) => !serverSet.has(s));
+            // Upload local-only to server
+            localOnly.forEach((s) => apiFav(s, 'add', token));
+            const merged = [...data.favorites, ...localOnly];
+            set({ favorites: merged, loaded: true });
+          } else {
+            set({ loaded: true });
           }
-        } catch { /* use local */ }
+        } catch {
+          set({ loaded: true });
+        }
       },
     }),
     {

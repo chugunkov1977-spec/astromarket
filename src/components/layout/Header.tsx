@@ -285,13 +285,6 @@ function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }
 
 function FavoritesBadge() {
   const favorites = useFavoritesStore((s) => s.favorites);
-  const loadFromStorage = useFavoritesStore((s) => s.loadFromStorage);
-  const loaded = useFavoritesStore((s) => s.loaded);
-
-  useEffect(() => {
-    if (!loaded) loadFromStorage();
-  }, [loaded, loadFromStorage]);
-
   const count = favorites.length;
 
   return (
@@ -409,13 +402,6 @@ function UserMenu() {
 
 function CartItemCount() {
   const items = useCartStore((s) => s.items);
-  const loaded = useCartStore((s) => s.loaded);
-  const loadFromStorage = useCartStore((s) => s.loadFromStorage);
-
-  useEffect(() => {
-    if (!loaded) loadFromStorage();
-  }, [loaded, loadFromStorage]);
-
   const count = items.length;
   if (count === 0) return null;
 
