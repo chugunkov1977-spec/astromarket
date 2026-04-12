@@ -16,6 +16,7 @@ const navLinks = [
   { href: '/catalog', label: 'Каталог', icon: null },
   { href: '/subscription', label: 'Подписка', icon: null },
   { href: '/orders', label: 'Мои заказы', icon: null },
+  { href: '/favorites', label: 'Избранное', icon: 'heart' as const },
   { href: '/cart', label: 'Корзина', icon: 'cart' as const },
 ];
 
@@ -100,6 +101,7 @@ function NavLinkInner({ href, label, icon, onClick }: { href: string; label: str
       )}
     >
       {icon === 'cart' && <ShoppingCart className="w-3.5 h-3.5" />}
+      {icon === 'heart' && <Heart className="w-3.5 h-3.5" />}
       {label}
       {icon === 'cart' && <CartItemCount />}
       {isActive && (
@@ -113,6 +115,7 @@ function NavLinkStatic({ href, label, icon }: { href: string; label: string; ico
   return (
     <Link href={href} className="relative text-sm font-medium text-mystic-300 transition-all duration-200 hover:text-white hover:-translate-y-[1px] flex items-center gap-1.5">
       {icon === 'cart' && <ShoppingCart className="w-3.5 h-3.5" />}
+      {icon === 'heart' && <Heart className="w-3.5 h-3.5" />}
       {label}
       {icon === 'cart' && <CartItemCount />}
     </Link>
@@ -132,6 +135,7 @@ function MobileNavLink({ href, label, icon, isLast, onClick }: { href: string; l
       )}
     >
       {icon === 'cart' && <ShoppingCart className="w-4 h-4" />}
+      {icon === 'heart' && <Heart className="w-4 h-4" />}
       {label}
     </Link>
   );
