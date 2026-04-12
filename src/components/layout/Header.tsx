@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo, Suspense, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { Search, Heart, User, Menu, X, ShoppingCart } from 'lucide-react';
+import { Search, Heart, User, Menu, X, ShoppingCart, LogOut, Settings, Package } from 'lucide-react';
 import { useAuthStore } from '@/hooks/useAuth';
 import { useFavoritesStore } from '@/hooks/useFavorites';
 import { useCartStore } from '@/hooks/useCart';
@@ -302,6 +302,101 @@ function FavoritesBadge() {
   );
 }
 
+// ── User menu dropdown ──────────────────────────────
+
+function UserMenu() {
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const logout = useAuthStore((s) => s.logout);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
+  }, [open]);
+
+  if (!mounted || !isAuthenticated || !user) {
+    return (
+      <>
+        <Link
+          href="/auth"
+          className="hidden sm:flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium transition-all duration-200 text-gold-400 border border-gold-500/30 bg-gradient-to-r from-gold-500/10 to-gold-600/10 hover:border-gold-500/50 hover:from-gold-500/15 hover:to-gold-600/15 hover:shadow-[0_0_15px_rgba(251,191,36,0.15)]"
+        >
+          <User className="w-4 h-4" />
+          Войти
+        </Link>
+        <Link href="/auth" className="sm:hidden w-9 h-9 rounded-full border border-mystic-700/40 hover:border-mystic-500/40 flex items-center justify-center text-mystic-400 hover:text-white transition-all duration-200">
+          <User className="w-4 h-4" />
+        </Link>
+      </>
+    );
+  }
+
+  const initial = user.name?.charAt(0)?.toUpperCase() || user.email.charAt(0).toUpperCase();
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200 text-mystic-300 hover:text-white border border-mystic-700/40 hover:border-mystic-500/40 hover:bg-mystic-900/40"
+      >
+        <span className="w-6 h-6 rounded-full bg-gradient-to-br from-gold-500 to-gold-600 text-night-950 text-xs font-bold flex items-center justify-center">
+          {initial}
+        </span>
+        <span className="max-w-[100px] truncate">{user.name}</span>
+      </button>
+
+      {/* Mobile */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="sm:hidden w-9 h-9 rounded-full border border-gold-500/30 flex items-center justify-center transition-all duration-200"
+      >
+        <span className="w-6 h-6 rounded-full bg-gradient-to-br from-gold-500 to-gold-600 text-night-950 text-[10px] font-bold flex items-center justify-center">
+          {initial}
+        </span>
+      </button>
+
+      {/* Dropdown */}
+      <div className={cn(
+        'absolute right-0 top-full mt-2 w-52 rounded-xl bg-night-950/95 backdrop-blur-xl border border-mystic-700/30 shadow-xl shadow-black/50 overflow-hidden transition-all duration-200 origin-top-right z-50',
+        open ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none',
+      )}>
+        <div className="px-4 py-3 border-b border-mystic-800/30">
+          <p className="text-sm font-medium text-white truncate">{user.name}</p>
+          <p className="text-xs text-mystic-500 truncate">{user.email}</p>
+        </div>
+        <div className="py-1">
+          <Link href="/orders" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-mystic-400 hover:text-white hover:bg-mystic-800/30 transition-all">
+            <Package className="w-4 h-4" /> Мои заказы
+          </Link>
+          <Link href="/favorites" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-mystic-400 hover:text-white hover:bg-mystic-800/30 transition-all">
+            <Heart className="w-4 h-4" /> Избранное
+          </Link>
+          <Link href="/subscription" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-mystic-400 hover:text-white hover:bg-mystic-800/30 transition-all">
+            <Settings className="w-4 h-4" /> Настройки
+          </Link>
+        </div>
+        <div className="border-t border-mystic-800/30 py-1">
+          <button
+            onClick={() => { logout(); setOpen(false); }}
+            className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 transition-all"
+          >
+            <LogOut className="w-4 h-4" /> Выйти
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Cart item count (inline badge for nav) ──────────
 
 function CartItemCount() {
@@ -355,7 +450,6 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const promo = usePromoBanner();
-  const { user } = useAuthStore();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -449,27 +543,8 @@ export default function Header() {
               {/* Favorites */}
               <FavoritesBadge />
 
-              {/* Auth — desktop */}
-              <Link
-                href={user ? '/profile' : '/auth'}
-                className={cn(
-                  'hidden sm:flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium transition-all duration-200',
-                  user
-                    ? 'text-mystic-300 hover:text-white border border-mystic-700/40 hover:border-mystic-500/40 hover:bg-mystic-900/40'
-                    : 'text-gold-400 border border-gold-500/30 bg-gradient-to-r from-gold-500/10 to-gold-600/10 hover:border-gold-500/50 hover:from-gold-500/15 hover:to-gold-600/15 hover:shadow-[0_0_15px_rgba(251,191,36,0.15)]',
-                )}
-              >
-                <User className="w-4 h-4" />
-                {user ? user.name || 'Профиль' : 'Войти'}
-              </Link>
-
-              {/* Auth — mobile */}
-              <Link
-                href={user ? '/profile' : '/auth'}
-                className="sm:hidden w-9 h-9 rounded-full border border-mystic-700/40 hover:border-mystic-500/40 flex items-center justify-center text-mystic-400 hover:text-white transition-all duration-200"
-              >
-                <User className="w-4 h-4" />
-              </Link>
+              {/* Auth / User menu */}
+              <UserMenu />
 
               {/* Burger */}
               <button

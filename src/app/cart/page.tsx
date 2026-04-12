@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ShoppingCart, X, Shield, ArrowRight, Trash2 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useCartStore } from '@/hooks/useCart';
+import { useAuthStore } from '@/hooks/useAuth';
 import { cn, formatPrice } from '@/lib/utils';
 
 const categoryIcon: Record<string, string> = {
@@ -22,6 +24,7 @@ const categoryColor: Record<string, string> = {
 };
 
 export default function CartPage() {
+  const router = useRouter();
   const items = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
   const clearCart = useCartStore((s) => s.clearCart);
@@ -29,10 +32,22 @@ export default function CartPage() {
   const getDiscount = useCartStore((s) => s.getDiscount);
   const loaded = useCartStore((s) => s.loaded);
   const loadFromStorage = useCartStore((s) => s.loadFromStorage);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const [authMounted, setAuthMounted] = useState(false);
 
+  useEffect(() => { setAuthMounted(true); }, []);
   useEffect(() => {
     if (!loaded) loadFromStorage();
   }, [loaded, loadFromStorage]);
+
+  const handleCheckout = () => {
+    if (!authMounted) return;
+    if (!isAuthenticated) {
+      router.push('/auth');
+      return;
+    }
+    // placeholder for checkout
+  };
 
   const total = getTotal();
   const discount = getDiscount();
@@ -145,8 +160,8 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  <button className="w-full btn-gold flex items-center justify-center gap-2 text-base py-4 mb-3">
-                    Перейти к оплате
+                  <button onClick={handleCheckout} className="w-full btn-gold flex items-center justify-center gap-2 text-base py-4 mb-3">
+                    {authMounted && !isAuthenticated ? 'Войти для оплаты' : 'Перейти к оплате'}
                     <ArrowRight className="w-5 h-5" />
                   </button>
 

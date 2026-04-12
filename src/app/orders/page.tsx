@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Clock, Star, MessageCircle, Package } from 'lucide-react';
+import { Clock, Star, MessageCircle, Package, LogIn } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { useAuthStore } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { formatPrice } from '@/lib/utils';
 
@@ -65,6 +66,29 @@ const completedOrders = [
 
 export default function OrdersPage() {
   const [tab, setTab] = useState<'active' | 'completed'>('active');
+  const [mounted, setMounted] = useState(false);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  if (mounted && !isAuthenticated) {
+    return (
+      <div className="min-h-screen">
+        <Header />
+        <main className="relative z-10">
+          <div className="max-w-7xl mx-auto px-4 py-20 text-center">
+            <LogIn className="w-12 h-12 text-mystic-700 mx-auto mb-4" />
+            <p className="text-mystic-400 text-lg mb-2">Войдите, чтобы увидеть заказы</p>
+            <p className="text-mystic-600 text-sm mb-6">Авторизуйтесь, чтобы управлять своими заказами</p>
+            <Link href="/auth" className="btn-gold inline-flex items-center gap-2">
+              Войти <LogIn className="w-4 h-4" />
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative">
