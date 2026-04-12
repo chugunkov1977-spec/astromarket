@@ -35,6 +35,7 @@ export default function CartPage() {
   const loaded = useCartStore((s) => s.loaded);
   const loadFromStorage = useCartStore((s) => s.loadFromStorage);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authToken = useAuthStore((s) => s.token);
   const createOrder = useOrdersStore((s) => s.createOrder);
   const showToast = useToastStore((s) => s.showToast);
   const [authMounted, setAuthMounted] = useState(false);
@@ -76,7 +77,7 @@ export default function CartPage() {
       router.push('/auth');
       return;
     }
-    createOrder(items, {});
+    createOrder(items, {}, authToken);
     clearCart();
     setCheckoutSuccess(true);
     setPromoApplied(null);

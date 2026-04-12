@@ -26,14 +26,13 @@ export interface Order {
 interface OrdersState {
   orders: Order[];
   nextNumber: number;
-  createOrder: (items: CartItem[], clientData: Record<string, string>) => Order[];
-  completeOrder: (orderId: string, result: string) => void;
+  createOrder: (items: CartItem[], clientData: Record<string, string>, token?: string | null) => Promise<Order[]>;
+  completeOrder: (orderId: string, result: string, token?: string | null) => void;
+  fetchOrders: (token: string) => Promise<void>;
   getActiveOrders: () => Order[];
   getCompletedOrders: () => Order[];
   getOrderById: (id: string) => Order | undefined;
 }
-
-// ── Psychic slug-to-avatar map (from seed-data known paths) ──
 
 const psychicAvatars: Record<string, string> = {
   cassandra: '/images/psychics/cassandra.png',
@@ -44,40 +43,17 @@ const psychicAvatars: Record<string, string> = {
 };
 
 const psychicSlugs: Record<string, string> = {
-  'Кассандра': 'cassandra',
-  'Орион': 'orion',
-  'Селена': 'selena',
-  'Аврора': 'aurora',
-  'Магнус': 'magnus',
+  'Кассандра': 'cassandra', 'Орион': 'orion', 'Селена': 'selena',
+  'Аврора': 'aurora', 'Магнус': 'magnus',
 };
 
-// ── Template results by category ──
-
-const tarotResults = [
-  '🃏 ✨ Расклад на трёх картах\n\n🌙 Первая карта — Верховная Жрица (перевёрнутая)\nЭта карта указывает на скрытые знания, которые вы пока не готовы принять. Интуиция подсказывает вам верный путь, но разум сопротивляется. Доверьтесь внутреннему голосу — он ведёт вас к истине.\n\n⭐ Вторая карта — Колесо Фортуны\nПеремены уже начались. Цикл вашей жизни вступает в новую фазу. То, что казалось застоем, на самом деле было подготовкой к важному повороту. Будьте открыты к неожиданным возможностям.\n\n🔮 Третья карта — Звезда\nНадежда и исцеление. Эта карта обещает светлое будущее после периода испытаний. Ваши мечты реалистичны, и Вселенная поддерживает ваш путь. Продолжайте верить в себя.\n\n✧ Общий совет: Сейчас время довериться потоку жизни. Не пытайтесь контролировать каждый шаг — позвольте событиям развиваться естественно. Ваша интуиция — ваш лучший компас.',
-];
-
-const astrologyResults = [
-  '⭐ ✨ Астрологический прогноз\n\n🌙 Положение планет\nСолнце в Овне формирует трин с Юпитером в Стрельце, открывая период невероятных возможностей для роста. Марс в вашем знаке даёт энергию и решительность.\n\n💫 Любовь и отношения\nВенера в благоприятном аспекте приносит гармонию в личную жизнь. Одиноким стоит обратить внимание на людей из ближайшего окружения — искра может вспыхнуть неожиданно.\n\n💼 Карьера и финансы\nМеркурий в десятом доме усиливает деловую хватку. Сейчас идеальное время для переговоров, презентаций и новых проектов. Финансовые перспективы благоприятны.\n\n🌿 Здоровье и энергия\nЛуна в Тельце стабилизирует эмоциональный фон. Уделите внимание отдыху и восстановлению — ваше тело нуждается в заботе после интенсивного периода.\n\n✧ Совет звёзд: Используйте эту энергию для смелых шагов. Вселенная благоволит тем, кто действует решительно.',
-];
-
-const numerologyResults = [
-  '🔢 ✨ Нумерологический анализ\n\n🌙 Число Жизненного Пути — 7\nВы — искатель истины, философ и мыслитель. Ваш путь связан с духовным развитием, глубоким анализом и постижением скрытых законов мироздания. Семёрка наделяет вас интуицией и аналитическим умом.\n\n⭐ Число Судьбы — 3\nТворческая энергия пронизывает вашу жизнь. Вам предназначено вдохновлять других, выражать себя через слова, образы и идеи. Не подавляйте свой творческий потенциал.\n\n💫 Число Души — 9\nГлубоко внутри вы стремитесь к служению миру. Девятка даёт сострадание, мудрость и понимание человеческой природы. Ваша щедрость — ваша сила.\n\n🔮 Персональный год — 5\nГод перемен и свободы! Ожидайте путешествия, новые знакомства и неожиданные повороты. Будьте гибкими и открытыми.\n\n✧ Рекомендация: Ваши числа указывают на период духовного пробуждения. Медитация и самопознание принесут ответы на главные вопросы.',
-];
-
-const runesResults = [
-  'ᚱ ✨ Рунический расклад\n\n🌙 Первая руна — Ансуз (ᚨ)\nРуна божественного послания и мудрости Одина. Она говорит о важном знании, которое приходит к вам через слова, сны или знаки. Будьте внимательны к сигналам Вселенной — ответ уже рядом.\n\n⚔️ Вторая руна — Тейваз (ᛏ)\nРуна воина и справедливости. Тюр призывает вас к мужеству и честности. Встретьте вызов лицом к лицу — ваша внутренняя сила превосходит любые препятствия. Победа за теми, кто действует с честью.\n\n🌿 Третья руна — Беркана (ᛒ)\nРуна берёзы, роста и новых начинаний. Что-то новое зарождается в вашей жизни — проект, отношения или внутренняя трансформация. Питайте этот росток терпением и заботой.\n\n✧ Послание рун: Древняя мудрость Севера указывает на время действия. Боги благоволят смелым — примите свой путь с открытым сердцем воина.',
-];
-
-function getTemplateResult(category: string): string {
-  switch (category) {
-    case 'TAROT': return tarotResults[0];
-    case 'ASTROLOGY': return astrologyResults[0];
-    case 'NUMEROLOGY': return numerologyResults[0];
-    case 'RUNES': return runesResults[0];
-    default: return tarotResults[0];
-  }
-}
+// Template results
+const resultTemplates: Record<string, string> = {
+  TAROT: '🃏 ✨ Расклад на трёх картах\n\n🌙 Первая карта — Верховная Жрица (перевёрнутая)\nЭта карта указывает на скрытые знания, которые вы пока не готовы принять. Интуиция подсказывает вам верный путь, но разум сопротивляется. Доверьтесь внутреннему голосу — он ведёт вас к истине.\n\n⭐ Вторая карта — Колесо Фортуны\nПеремены уже начались. Цикл вашей жизни вступает в новую фазу. То, что казалось застоем, на самом деле было подготовкой к важному повороту. Будьте открыты к неожиданным возможностям.\n\n🔮 Третья карта — Звезда\nНадежда и исцеление. Эта карта обещает светлое будущее после периода испытаний. Ваши мечты реалистичны, и Вселенная поддерживает ваш путь.\n\n✧ Общий совет: Доверьтесь потоку жизни. Ваша интуиция — ваш лучший компас.',
+  ASTROLOGY: '⭐ ✨ Астрологический прогноз\n\n🌙 Положение планет\nСолнце в Овне формирует трин с Юпитером, открывая период возможностей. Марс даёт энергию и решительность.\n\n💫 Любовь\nВенера в благоприятном аспекте приносит гармонию. Одиноким стоит обратить внимание на ближайшее окружение.\n\n💼 Карьера\nМеркурий усиливает деловую хватку. Идеальное время для переговоров.\n\n🌿 Здоровье\nЛуна стабилизирует эмоциональный фон. Уделите внимание отдыху.\n\n✧ Совет звёзд: Используйте эту энергию для смелых шагов.',
+  NUMEROLOGY: '🔢 ✨ Нумерологический анализ\n\n🌙 Число Жизненного Пути — 7\nВы — искатель истины. Ваш путь связан с духовным развитием и постижением скрытых законов мироздания.\n\n⭐ Число Судьбы — 3\nТворческая энергия пронизывает вашу жизнь. Вам предназначено вдохновлять других.\n\n💫 Число Души — 9\nГлубоко внутри вы стремитесь к служению миру. Девятка даёт сострадание и мудрость.\n\n✧ Рекомендация: Ваши числа указывают на период духовного пробуждения.',
+  RUNES: 'ᚱ ✨ Рунический расклад\n\n🌙 Ансуз (ᚨ) — Руна мудрости Одина\nВажное знание приходит через сны и знаки. Будьте внимательны к сигналам Вселенной.\n\n⚔️ Тейваз (ᛏ) — Руна воина\nТюр призывает к мужеству. Встретьте вызов лицом к лицу — ваша сила превосходит препятствия.\n\n🌿 Беркана (ᛒ) — Руна роста\nЧто-то новое зарождается. Питайте этот росток терпением и заботой.\n\n✧ Послание рун: Боги благоволят смелым — примите свой путь с открытым сердцем воина.',
+};
 
 function generateId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -89,14 +65,14 @@ export const useOrdersStore = create<OrdersState>()(
       orders: [],
       nextNumber: 1001,
 
-      createOrder: (items, clientData) => {
+      createOrder: async (items, clientData, token) => {
         let num = get().nextNumber;
         const newOrders: Order[] = items.map((item) => {
           const psSlug = psychicSlugs[item.psychicName] || '';
-          const order: Order = {
+          return {
             id: generateId(),
             orderNumber: num++,
-            status: 'processing',
+            status: 'processing' as const,
             productSlug: item.slug,
             productTitle: item.title,
             productImageUrl: item.imageUrl,
@@ -111,7 +87,6 @@ export const useOrdersStore = create<OrdersState>()(
             createdAt: new Date().toISOString(),
             completedAt: null,
           };
-          return order;
         });
 
         set((state) => ({
@@ -119,18 +94,45 @@ export const useOrdersStore = create<OrdersState>()(
           nextNumber: num,
         }));
 
-        // Auto-complete after random delay (3-10 seconds)
+        // Try to save to API if token available
+        if (token) {
+          try {
+            const res = await fetch('/api/orders', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ items, clientData }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              // Update local orders with server IDs
+              if (data.orders && Array.isArray(data.orders)) {
+                set((state) => ({
+                  orders: state.orders.map((o, idx) => {
+                    const serverOrder = data.orders[idx];
+                    if (serverOrder && o.status === 'processing' && o.productSlug === (serverOrder.productSlug)) {
+                      return { ...o, id: serverOrder.id, orderNumber: serverOrder.orderNumber };
+                    }
+                    return o;
+                  }),
+                }));
+              }
+            }
+          } catch { /* fallback to local */ }
+        }
+
+        // Auto-complete after delay
         newOrders.forEach((order) => {
           const delay = 3000 + Math.random() * 7000;
           setTimeout(() => {
-            get().completeOrder(order.id, getTemplateResult(order.category));
+            const result = resultTemplates[order.category] || resultTemplates.TAROT;
+            get().completeOrder(order.id, result, token);
           }, delay);
         });
 
         return newOrders;
       },
 
-      completeOrder: (orderId, result) => {
+      completeOrder: async (orderId, result, token) => {
         set((state) => ({
           orders: state.orders.map((o) =>
             o.id === orderId
@@ -138,6 +140,51 @@ export const useOrdersStore = create<OrdersState>()(
               : o,
           ),
         }));
+
+        // Try to update on server
+        if (token) {
+          try {
+            await fetch(`/api/orders/${orderId}/complete`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ result }),
+            });
+          } catch { /* ignore */ }
+        }
+      },
+
+      fetchOrders: async (token) => {
+        try {
+          const res = await fetch('/api/orders', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data.orders && Array.isArray(data.orders)) {
+            const mapped: Order[] = data.orders.map((o: any) => ({
+              id: o.id,
+              orderNumber: o.orderNumber,
+              status: o.status === 'COMPLETED' ? 'completed' : 'processing',
+              productSlug: o.productSlug,
+              productTitle: o.productTitle,
+              productImageUrl: o.productImageUrl,
+              psychicName: o.psychicName,
+              psychicSlug: o.psychicSlug,
+              psychicAvatarUrl: psychicAvatars[o.psychicSlug] || null,
+              price: o.amount,
+              oldPrice: null,
+              category: o.category,
+              clientData: o.clientData || {},
+              result: o.generatedResult,
+              createdAt: o.createdAt,
+              completedAt: o.completedAt,
+            }));
+            // Merge: keep local orders not yet on server
+            const serverIds = new Set(mapped.map((o: Order) => o.id));
+            const localOnly = get().orders.filter((o) => !serverIds.has(o.id));
+            set({ orders: [...mapped, ...localOnly] });
+          }
+        } catch { /* use local data */ }
       },
 
       getActiveOrders: () => get().orders.filter((o) => o.status === 'processing'),

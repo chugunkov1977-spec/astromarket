@@ -11,29 +11,24 @@ datasource db {
 
 model User {
   id            String    @id @default(cuid())
-  email         String?   @unique
+  email         String    @unique
   phone         String?   @unique
-  name          String?
-  passwordHash  String?
-  avatar        String?
+  passwordHash  String
+  name          String
   birthDate     DateTime?
-  
-  // OAuth
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-  
+  avatarUrl     String?
+
+  // Лояльность
+  loyaltyPoints Int         @default(0)
+  loyaltyTier   LoyaltyTier @default(NOVICE)
+  referralCode  String      @unique
+  referredBy    String?
+
   // Связи
   orders        Order[]
   reviews       Review[]
   favorites     Favorite[]
-  chatMessages  ChatMessage[]
-  
-  // Лояльность
-  loyaltyPoints Int       @default(0)
-  loyaltyTier   LoyaltyTier @default(NOVICE)
-  
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -41,201 +36,10 @@ model User {
 }
 
 enum LoyaltyTier {
-  NOVICE       // Новичок
-  INITIATED    // Посвящённый
-  MASTER       // Мастер
-  SEER         // Видящий
-}
-
-// NextAuth
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-  @@map("verification_tokens")
-}
-
-// ==================== AI-ПЕРСОНАЖИ (ГАДАЛКИ) ====================
-
-model Practitioner {
-  id              String   @id @default(cuid())
-  slug            String   @unique  // URL-friendly: maria-velesova
-  name            String             // Мария Велесова
-  title           String             // Славянская ведунья
-  avatar          String             // URL аватара
-  coverImage      String?            // Обложка профиля
-  biography       String   @db.Text  // Легенда/биография
-  shortBio        String             // Краткое описание (1-2 предложения)
-  
-  // AI-настройки
-  specialization  Specialization[]
-  style           String             // мягкий / строгий / мистический...
-  systemPrompt    String   @db.Text  // Базовый системный промпт персонажа
-  
-  // Статистика (обновляются триггерами/кроном)
-  rating          Float    @default(4.5)
-  totalOrders     Int      @default(0)
-  totalReviews    Int      @default(0)
-  
-  isActive        Boolean  @default(true)
-  sortOrder       Int      @default(0)
-  
-  // Связи
-  products        Product[]
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@map("practitioners")
-}
-
-enum Specialization {
-  TAROT
-  ASTROLOGY
-  NUMEROLOGY
-  RUNES
-  MEDITATION
-  PALMISTRY
-  COURSES
-}
-
-// ==================== ТОВАРЫ-УСЛУГИ ====================
-
-model Product {
-  id              String   @id @default(cuid())
-  slug            String   @unique
-  name            String
-  shortDesc       String             // Краткое описание для карточки
-  description     String   @db.Text  // Полное описание
-  
-  // Медиа
-  images          String[]           // Массив URL изображений
-  
-  // Цена
-  price           Int                // В копейках (29900 = 299₽)
-  oldPrice        Int?               // Перечёркнутая цена
-  
-  // Классификация
-  category        ProductCategory
-  topic           ProductTopic
-  priceTier       PriceTier
-  
-  // AI-генерация
-  promptTemplate  String   @db.Text  // Шаблон промпта для генерации результата
-  resultFormat    ResultFormat        // Формат результата
-  estimatedTime   Int      @default(5) // Ожидаемое время (мин) для имитации
-  maxFollowUps    Int      @default(1) // Количество уточняющих вопросов
-  
-  // Форма заказа — какие поля запрашивать
-  requiredFields  OrderField[]
-  
-  // Статистика
-  rating          Float    @default(4.5)
-  reviewCount     Int      @default(0)
-  orderCount      Int      @default(0)
-  
-  // Бейджи
-  badges          ProductBadge[]
-  
-  // Связи
-  practitionerId  String
-  practitioner    Practitioner @relation(fields: [practitionerId], references: [id])
-  orders          Order[]
-  reviews         Review[]
-  favorites       Favorite[]
-  
-  isActive        Boolean  @default(true)
-  sortOrder       Int      @default(0)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([category])
-  @@index([topic])
-  @@index([practitionerId])
-  @@index([priceTier])
-  @@map("products")
-}
-
-enum ProductCategory {
-  TAROT
-  ASTROLOGY
-  NUMEROLOGY
-  RUNES
-  MEDITATION
-  COURSES
-}
-
-enum ProductTopic {
-  RELATIONSHIPS
-  FINANCE
-  HEALTH
-  CAREER
-  GENERAL
-}
-
-enum PriceTier {
-  BASIC      // 299-699₽
-  STANDARD   // 799-1999₽
-  PREMIUM    // 2499-4999₽
-  VIP        // 5000-15000₽
-}
-
-enum ResultFormat {
-  CHAT_TEXT      // Текст в чате
-  CHAT_IMAGES    // Текст + изображения карт
-  PDF            // PDF-документ
-  INTERACTIVE    // Интерактивный чат (VIP)
-}
-
-enum OrderField {
-  NAME
-  BIRTH_DATE
-  BIRTH_TIME
-  BIRTH_PLACE
-  QUESTION
-  PARTNER_NAME
-  PARTNER_BIRTH_DATE
-  PHOTO
-}
-
-enum ProductBadge {
-  BESTSELLER
-  NEW
-  DISCOUNT
-  LIMITED
+  NOVICE
+  INITIATED
+  MASTER
+  SEER
 }
 
 // ==================== ЗАКАЗЫ ====================
@@ -243,38 +47,31 @@ enum ProductBadge {
 model Order {
   id              String      @id @default(cuid())
   orderNumber     Int         @unique @default(autoincrement())
-  
+
   // Связи
   userId          String
   user            User        @relation(fields: [userId], references: [id])
-  productId       String
-  product         Product     @relation(fields: [productId], references: [id])
-  
-  // Данные заказа
-  status          OrderStatus @default(PENDING_PAYMENT)
-  price           Int                  // Зафиксированная цена на момент заказа
-  
-  // Данные от клиента (заполненная форма)
+
+  // Данные о товаре (денормализовано — товары из seed-data, не из БД)
+  productSlug     String
+  productTitle    String
+  productImageUrl String?
+  psychicName     String
+  psychicSlug     String
+  category        String
+
+  // Заказ
+  status          OrderStatus @default(PROCESSING)
+  amount          Int                  // Цена в копейках
   clientData      Json                 // { name, birthDate, question, ... }
-  
-  // Оплата
-  paymentId       String?              // ID платежа в ЮKassa
-  paymentStatus   PaymentStatus @default(PENDING)
-  paidAt          DateTime?
-  
-  // AI-генерация
-  aiResponse      String?    @db.Text  // Сгенерированный ответ
-  aiResponseMeta  Json?                // Доп. данные (карты, позиции...)
-  generatedAt     DateTime?
-  deliveredAt     DateTime?
-  
-  // Чат
-  chatMessages    ChatMessage[]
-  followUpsUsed   Int        @default(0)
-  
+
+  // Результат
+  generatedResult String?    @db.Text  // AI-сгенерированный текст
+  completedAt     DateTime?
+
   // Отзыв
   review          Review?
-  
+
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
@@ -284,77 +81,36 @@ model Order {
 }
 
 enum OrderStatus {
-  PENDING_PAYMENT
-  PAID
-  PROCESSING      // AI генерирует
-  DELIVERING      // «Мастер работает»
+  PROCESSING
   COMPLETED
   CANCELLED
-  REFUNDED
-}
-
-enum PaymentStatus {
-  PENDING
-  SUCCEEDED
-  CANCELLED
-  REFUNDED
-}
-
-// ==================== ЧАТ ====================
-
-model ChatMessage {
-  id        String          @id @default(cuid())
-  orderId   String
-  order     Order           @relation(fields: [orderId], references: [id])
-  
-  role      ChatRole
-  content   String          @db.Text
-  images    String[]        // URL изображений (карты Таро и т.д.)
-  
-  // Если от пользователя
-  userId    String?
-  user      User?           @relation(fields: [userId], references: [id])
-  
-  createdAt DateTime        @default(now())
-
-  @@index([orderId])
-  @@map("chat_messages")
-}
-
-enum ChatRole {
-  USER
-  PRACTITIONER   // AI-ответ от имени персонажа
-  SYSTEM         // Системное сообщение (статус и т.д.)
 }
 
 // ==================== ОТЗЫВЫ ====================
 
 model Review {
   id          String       @id @default(cuid())
-  
+
   orderId     String       @unique
   order       Order        @relation(fields: [orderId], references: [id])
-  userId      String
-  user        User         @relation(fields: [userId], references: [id])
-  productId   String
-  product     Product      @relation(fields: [productId], references: [id])
-  
-  rating      Int                    // 1-5
-  text        String       @db.Text
-  
-  // Модерация
-  status      ReviewStatus @default(PENDING)
-  
-  // Сидинг (AI-сгенерированные)
-  isSeeded    Boolean      @default(false)
-  seededName  String?                // Имя фейкового автора
-  seededAvatar String?               // Аватар фейкового автора
-  
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  userId      String?
+  user        User?        @relation(fields: [userId], references: [id])
 
-  @@index([productId])
-  @@index([status])
+  productSlug String
+  rating      Int
+  text        String       @db.Text
+
+  // Модерация
+  status      ReviewStatus @default(APPROVED)
+
+  // Сидинг
+  isSeeded    Boolean      @default(false)
+  authorName  String?
+  authorAvatar String?
+
+  createdAt   DateTime     @default(now())
+
+  @@index([productSlug])
   @@map("reviews")
 }
 
@@ -362,37 +118,18 @@ enum ReviewStatus {
   PENDING
   APPROVED
   REJECTED
-  HIDDEN        // Негативный — скрыт от других
 }
 
 // ==================== ИЗБРАННОЕ ====================
 
 model Favorite {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  productId String
-  product   Product  @relation(fields: [productId], references: [id])
-  
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  productSlug String
 
-  @@unique([userId, productId])
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, productSlug])
   @@map("favorites")
-}
-
-// ==================== ПРОМОКОДЫ ====================
-
-model PromoCode {
-  id              String    @id @default(cuid())
-  code            String    @unique
-  discountPercent Int                // Процент скидки
-  maxUses         Int?               // null = безлимит
-  usedCount       Int       @default(0)
-  validFrom       DateTime  @default(now())
-  validUntil      DateTime?
-  isActive        Boolean   @default(true)
-  
-  createdAt       DateTime  @default(now())
-
-  @@map("promo_codes")
 }

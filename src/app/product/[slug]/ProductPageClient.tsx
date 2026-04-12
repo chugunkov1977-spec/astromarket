@@ -130,6 +130,7 @@ function CartButtons({ product }: { product: { id: string; slug: string; title: 
   const cartLoaded = useCartStore((s) => s.loaded);
   const loadCart = useCartStore((s) => s.loadFromStorage);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authToken = useAuthStore((s) => s.token);
   const createOrder = useOrdersStore((s) => s.createOrder);
   const showToast = useToastStore((s) => s.showToast);
   const [showModal, setShowModal] = useState(false);
@@ -160,7 +161,7 @@ function CartButtons({ product }: { product: { id: string; slug: string; title: 
   };
 
   const handleOrderSubmit = (clientData: Record<string, string>) => {
-    createOrder([{ ...cartData, quantity: 1 }], clientData);
+    createOrder([{ ...cartData, quantity: 1 }], clientData, authToken);
     showToast('Заказ оформлен!', 'success');
     setShowModal(false);
     router.push('/orders');
