@@ -209,68 +209,72 @@ function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }
   if (!open) return null;
 
   return (
-    <div
-      ref={overlayRef}
-      className="absolute top-full left-0 right-0 z-50 border-b border-mystic-800/30 animate-fade-in"
-      style={{
-        backgroundColor: 'rgba(10, 6, 20, 0.96)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
-      }}
-    >
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Поиск услуг и мастеров..."
-          className="w-full bg-night-950/80 border border-mystic-700/30 rounded-xl px-4 py-3 text-white text-sm placeholder-mystic-600 focus:outline-none focus:border-mystic-500/50 transition-colors"
-        />
+    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+      <div ref={overlayRef} className="max-w-2xl mx-auto mt-20 px-4" onClick={(e) => e.stopPropagation()}>
+        <div className="relative">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-mystic-500" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Поиск услуг, мастеров..."
+            className="w-full pl-14 pr-5 py-4 rounded-2xl bg-night-950/90 backdrop-blur-xl border border-mystic-700/30 text-white text-lg placeholder-mystic-600 focus:outline-none focus:border-mystic-500/50 transition-colors"
+          />
+          <button onClick={onClose} className="absolute right-4 top-1/2 -translate-y-1/2 text-mystic-500 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-        {/* Results */}
         {query.trim().length >= 2 && (
-          <div className="mt-3 space-y-1">
+          <div className="mt-3 rounded-2xl bg-night-950/90 backdrop-blur-xl border border-mystic-700/30 overflow-hidden">
             {results.length === 0 ? (
-              <p className="text-sm text-mystic-500 py-3 text-center">Ничего не найдено</p>
+              <div className="py-10 text-center">
+                <p className="text-mystic-500 mb-2">Ничего не найдено</p>
+                <Link href="/catalog" onClick={onClose} className="text-sm text-gold-400 hover:text-gold-300 transition-colors">
+                  Перейти в каталог →
+                </Link>
+              </div>
             ) : (
-              results.map((item) =>
-                item.type === 'product' ? (
-                  <Link
-                    key={`p-${item.slug}`}
-                    href={`/product/${item.slug}`}
-                    onClick={onClose}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-mystic-900/30 transition-colors"
-                  >
-                    <span className="text-lg w-7 text-center shrink-0">
-                      {categoryIcon[item.category] || '✧'}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white truncate">{item.title}</p>
-                      <p className="text-xs text-mystic-500 truncate">{item.psychicName}</p>
-                    </div>
-                    <span className="text-sm font-semibold text-mystic-300 shrink-0">
-                      {formatPrice(item.price)}
-                    </span>
-                  </Link>
-                ) : (
-                  <Link
-                    key={`m-${item.slug}`}
-                    href={`/psychic/${item.slug}`}
-                    onClick={onClose}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-mystic-900/30 transition-colors"
-                  >
-                    <span className="text-lg w-7 text-center shrink-0">✧</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white truncate">{item.name}</p>
-                      <p className="text-xs text-mystic-500 truncate">{item.shortBio}</p>
-                    </div>
-                    <span className="text-xs text-mystic-500 shrink-0">Мастер</span>
-                  </Link>
-                ),
-              )
+              <div className="py-2">
+                {results.map((item) =>
+                  item.type === 'product' ? (
+                    <Link
+                      key={`p-${item.slug}`}
+                      href={`/product/${item.slug}`}
+                      onClick={onClose}
+                      className="flex items-center gap-3 px-5 py-3 hover:bg-mystic-900/30 transition-colors"
+                    >
+                      <span className="text-xl w-8 text-center shrink-0">{categoryIcon[item.category] || '✧'}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{item.title}</p>
+                        <p className="text-xs text-mystic-500 truncate">{item.psychicName}</p>
+                      </div>
+                      <span className="text-sm font-semibold text-mystic-300 shrink-0">{formatPrice(item.price)}</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      key={`m-${item.slug}`}
+                      href={`/psychic/${item.slug}`}
+                      onClick={onClose}
+                      className="flex items-center gap-3 px-5 py-3 hover:bg-mystic-900/30 transition-colors"
+                    >
+                      <span className="text-xl w-8 text-center shrink-0">✧</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{item.name}</p>
+                        <p className="text-xs text-mystic-500 truncate">{item.shortBio}</p>
+                      </div>
+                      <span className="text-xs text-mystic-500 shrink-0">Мастер</span>
+                    </Link>
+                  ),
+                )}
+              </div>
             )}
           </div>
+        )}
+
+        {query.trim().length < 2 && (
+          <p className="text-center text-mystic-600 text-sm mt-6">Начните вводить название услуги или имя мастера</p>
         )}
       </div>
     </div>
@@ -384,7 +388,7 @@ function UserMenu() {
           <Link href="/favorites" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-mystic-400 hover:text-white hover:bg-mystic-800/30 transition-all">
             <Heart className="w-4 h-4" /> Избранное
           </Link>
-          <Link href="/subscription" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-mystic-400 hover:text-white hover:bg-mystic-800/30 transition-all">
+          <Link href="/profile" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-mystic-400 hover:text-white hover:bg-mystic-800/30 transition-all">
             <Settings className="w-4 h-4" /> Настройки
           </Link>
         </div>
@@ -565,9 +569,10 @@ export default function Header() {
         {/* Glowing bottom line */}
         <div className="h-[1px] bg-gradient-to-r from-transparent via-mystic-500/40 to-transparent" />
 
-        {/* Search overlay */}
-        <SearchOverlay open={searchOpen} onClose={closeSearch} />
       </div>
+
+      {/* Search overlay (full-screen) */}
+      <SearchOverlay open={searchOpen} onClose={closeSearch} />
 
       {/* ====== Mobile menu ====== */}
       <div

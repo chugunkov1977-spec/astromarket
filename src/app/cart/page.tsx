@@ -39,11 +39,36 @@ export default function CartPage() {
   const showToast = useToastStore((s) => s.showToast);
   const [authMounted, setAuthMounted] = useState(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoApplied, setPromoApplied] = useState<{ code: string; type: 'percent' | 'fixed'; value: number } | null>(null);
+  const [promoError, setPromoError] = useState('');
 
   useEffect(() => { setAuthMounted(true); }, []);
   useEffect(() => {
     if (!loaded) loadFromStorage();
   }, [loaded, loadFromStorage]);
+
+  const handleApplyPromo = () => {
+    setPromoError('');
+    const code = promoCode.trim().toUpperCase();
+    if (code === 'WELCOME20') {
+      setPromoApplied({ code, type: 'percent', value: 20 });
+      showToast('Промокод применён: скидка 20%', 'success');
+    } else if (code === 'STAR10') {
+      setPromoApplied({ code, type: 'percent', value: 10 });
+      showToast('Промокод применён: скидка 10%', 'success');
+    } else if (code === 'FIRST500') {
+      const t = getTotal();
+      if (t > 50000) { // 500₽ in kopecks
+        setPromoApplied({ code, type: 'fixed', value: 50000 });
+        showToast('Промокод применён: скидка 500 ₽', 'success');
+      } else {
+        setPromoError('Промокод действует при заказе от 500 ₽');
+      }
+    } else {
+      setPromoError('Промокод не найден');
+    }
+  };
 
   const handleCheckout = () => {
     if (!authMounted) return;
@@ -54,6 +79,7 @@ export default function CartPage() {
     createOrder(items, {});
     clearCart();
     setCheckoutSuccess(true);
+    setPromoApplied(null);
     showToast('Заказ оформлен!', 'success');
     setTimeout(() => router.push('/orders'), 1000);
   };
@@ -61,6 +87,12 @@ export default function CartPage() {
   const total = getTotal();
   const discount = getDiscount();
   const subtotal = total + discount;
+  const promoDiscount = promoApplied
+    ? promoApplied.type === 'percent'
+      ? Math.round(total * promoApplied.value / 100)
+      : Math.min(promoApplied.value, total)
+    : 0;
+  const finalTotal = total - promoDiscount;
 
   return (
     <div className="min-h-screen relative">
@@ -167,12 +199,49 @@ export default function CartPage() {
                         <span className="text-sm text-emerald-400">−{formatPrice(discount)}</span>
                       </div>
                     )}
+                    {promoDiscount > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-mystic-300">Промокод {promoApplied?.code}</span>
+                        <span className="text-sm text-emerald-400">−{formatPrice(promoDiscount)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Promo code */}
+                  <div className="mb-4">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={promoCode}
+                        onChange={(e) => { setPromoCode(e.target.value); setPromoError(''); }}
+                        placeholder="Промокод"
+                        disabled={!!promoApplied}
+                        className="flex-1 px-3 py-2.5 rounded-xl bg-night-950/80 border border-mystic-700/30 text-sm text-white placeholder-mystic-600 focus:outline-none focus:border-mystic-500/50 transition-colors disabled:opacity-50"
+                      />
+                      {promoApplied ? (
+                        <button
+                          onClick={() => { setPromoApplied(null); setPromoCode(''); }}
+                          className="px-3 py-2.5 rounded-xl text-xs text-rose-400 border border-rose-500/20 hover:bg-rose-500/10 transition-colors shrink-0"
+                        >
+                          Отменить
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleApplyPromo}
+                          className="px-4 py-2.5 rounded-xl border border-mystic-500/40 text-sm text-mystic-300 hover:bg-mystic-500/10 transition-colors shrink-0"
+                        >
+                          Применить
+                        </button>
+                      )}
+                    </div>
+                    {promoError && <p className="text-xs text-rose-400 mt-1.5">{promoError}</p>}
+                    {promoApplied && <p className="text-xs text-emerald-400 mt-1.5">Промокод применён!</p>}
                   </div>
 
                   <div className="border-t border-mystic-800/30 pt-4 mb-6">
                     <div className="flex items-center justify-between">
                       <span className="text-base font-semibold text-white">К оплате</span>
-                      <span className="text-2xl font-bold text-white">{formatPrice(total)}</span>
+                      <span className="text-2xl font-bold text-white">{formatPrice(finalTotal)}</span>
                     </div>
                   </div>
 

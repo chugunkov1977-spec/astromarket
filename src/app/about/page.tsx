@@ -1,6 +1,9 @@
+import type { Metadata } from 'next';
 import { Sparkles, Users, Zap, Shield } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+
+export const metadata: Metadata = { title: 'О нас | AstroMarket', description: 'AstroMarket — первый AI-маркетплейс эзотерических услуг в России' };
 
 const features = [
   { icon: Sparkles, title: 'AI-точность', desc: 'Предсказания на основе продвинутых алгоритмов искусственного интеллекта' },
