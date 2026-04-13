@@ -43,7 +43,7 @@ function cartApiPost(body: Record<string, unknown>, token: string) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(body),
-  }).catch(() => {});
+  }).catch((e) => console.error('cartApiPost error:', e));
 }
 
 export const useCartStore = create<CartState>()(
@@ -97,16 +97,13 @@ export const useCartStore = create<CartState>()(
               category: p.category,
               quantity: 1,
             }));
-            // Find local items not on server
-            const serverSlugList = serverItems.map((i) => i.slug);
-            const localOnly = get().items.filter((i) => serverSlugList.indexOf(i.slug) === -1);
-            // Upload local-only items to server
-            localOnly.forEach((i) => cartApiPost({ action: 'add', productSlug: i.slug }, token));
-            set({ items: [...serverItems, ...localOnly], loaded: true });
+            // Server is source of truth — replace local state entirely
+            set({ items: serverItems, loaded: true });
           } else {
             set({ loaded: true });
           }
-        } catch {
+        } catch (e) {
+          console.error('syncCart error:', e);
           set({ loaded: true });
         }
       },

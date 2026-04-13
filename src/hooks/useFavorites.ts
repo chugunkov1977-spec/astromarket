@@ -29,7 +29,7 @@ function apiFav(slug: string, action: 'add' | 'remove', token: string) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ productSlug: slug, action }),
-  }).catch(() => {});
+  }).catch((e) => console.error('apiFav error:', e));
 }
 
 export const useFavoritesStore = create<FavoritesState>()(
@@ -70,18 +70,13 @@ export const useFavoritesStore = create<FavoritesState>()(
           if (!res.ok) { set({ loaded: true }); return; }
           const data = await res.json();
           if (data.favorites && Array.isArray(data.favorites)) {
-            // Merge server + local, deduplicate
-            const local = get().favorites;
-            const serverSet = new Set(data.favorites as string[]);
-            const localOnly = local.filter((s) => !serverSet.has(s));
-            // Upload local-only to server
-            localOnly.forEach((s) => apiFav(s, 'add', token));
-            const merged = [...data.favorites, ...localOnly];
-            set({ favorites: merged, loaded: true });
+            // Server is source of truth — replace local state entirely
+            set({ favorites: data.favorites, loaded: true });
           } else {
             set({ loaded: true });
           }
-        } catch {
+        } catch (e) {
+          console.error('syncFavorites error:', e);
           set({ loaded: true });
         }
       },
