@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 
-// GET — fetch user's orders
+// GET — fetch all orders for authenticated user
 export async function GET(request: NextRequest) {
   const userId = getUserIdFromRequest(request);
   if (!userId) {
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST — create orders from cart items
+// POST — create new orders from cart items
 export async function POST(request: NextRequest) {
   const userId = getUserIdFromRequest(request);
   if (!userId) {
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const { items, clientData } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: 'Корзина пуста' }, { status: 400 });
+      return NextResponse.json({ error: 'Нет товаров для заказа' }, { status: 400 });
     }
 
     const createdOrders = [];
@@ -41,13 +41,15 @@ export async function POST(request: NextRequest) {
       const order = await prisma.order.create({
         data: {
           userId,
-          productSlug: item.slug || item.productSlug,
-          productTitle: item.title || item.productTitle,
+          productSlug: item.slug || item.productSlug || '',
+          productTitle: item.title || item.productTitle || '',
           productImageUrl: item.imageUrl || item.productImageUrl || null,
           psychicName: item.psychicName || '',
           psychicSlug: item.psychicSlug || '',
+          psychicAvatarUrl: item.psychicAvatarUrl || null,
           category: item.category || '',
-          amount: item.price,
+          amount: item.price || 0,
+          oldPrice: item.oldPrice || null,
           clientData: clientData || {},
           status: 'PROCESSING',
         },

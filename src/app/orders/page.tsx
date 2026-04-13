@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Clock, Package, LogIn, ChevronDown, ShoppingCart } from 'lucide-react';
+import { Clock, Package, LogIn, ChevronDown, ShoppingCart, Loader2 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useAuthStore } from '@/hooks/useAuth';
@@ -25,17 +25,25 @@ export default function OrdersPage() {
   const [expandedResult, setExpandedResult] = useState<string | null>(null);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const orders = useOrdersStore((s) => s.orders);
-  const [, forceUpdate] = useState(0);
+  const isLoading = useOrdersStore((s) => s.isLoading);
+  const syncOrders = useOrdersStore((s) => s.syncOrders);
 
   useEffect(() => { setMounted(true); }, []);
 
-  // Poll for order status changes (setTimeout fires outside React)
+  // Fetch orders from server on mount
+  useEffect(() => {
+    if (mounted && isAuthenticated) {
+      syncOrders();
+    }
+  }, [mounted, isAuthenticated, syncOrders]);
+
+  // Poll for processing orders to auto-refresh when they complete
   useEffect(() => {
     const hasProcessing = orders.some((o) => o.status === 'processing');
-    if (!hasProcessing) return;
-    const interval = setInterval(() => forceUpdate((n) => n + 1), 1000);
+    if (!hasProcessing || !isAuthenticated) return;
+    const interval = setInterval(() => syncOrders(), 3000);
     return () => clearInterval(interval);
-  }, [orders]);
+  }, [orders, isAuthenticated, syncOrders]);
 
   const activeOrders = orders.filter((o) => o.status === 'processing');
   const completedOrders = orders.filter((o) => o.status === 'completed');
@@ -59,8 +67,6 @@ export default function OrdersPage() {
     );
   }
 
-  const hasOrders = orders.length > 0;
-
   return (
     <div className="min-h-screen relative">
       <Header />
@@ -71,7 +77,15 @@ export default function OrdersPage() {
             Мои заказы
           </h1>
 
-          {mounted && !hasOrders ? (
+          {/* Loading */}
+          {isLoading && orders.length === 0 && (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 text-mystic-500 animate-spin" />
+            </div>
+          )}
+
+          {/* Empty state */}
+          {mounted && !isLoading && orders.length === 0 && (
             <div className="text-center py-20">
               <Package className="w-14 h-14 text-mystic-700 mx-auto mb-4" />
               <p className="text-mystic-400 text-lg mb-2">У вас пока нет заказов</p>
@@ -80,7 +94,10 @@ export default function OrdersPage() {
                 <ShoppingCart className="w-4 h-4" /> Перейти в каталог
               </Link>
             </div>
-          ) : (
+          )}
+
+          {/* Orders exist */}
+          {orders.length > 0 && (
             <>
               {/* Tabs */}
               <div className="inline-flex rounded-xl bg-mystic-900/20 border border-mystic-800/20 p-1 mb-6">

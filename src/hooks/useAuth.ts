@@ -26,8 +26,10 @@ async function syncStoresAfterAuth(token: string) {
   // Dynamically import to avoid circular deps
   const { useCartStore } = await import('./useCart');
   const { useFavoritesStore } = await import('./useFavorites');
+  const { useOrdersStore } = await import('./useOrders');
   useCartStore.getState().syncCart(token).catch(() => {});
   useFavoritesStore.getState().syncFavorites(token).catch(() => {});
+  useOrdersStore.getState().syncOrders().catch(() => {});
 }
 
 export const useAuthStore = create<AuthState>()(

@@ -51,23 +51,25 @@ model Order {
 
   // Связи
   userId          String
-  user            User        @relation(fields: [userId], references: [id])
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Данные о товаре (денормализовано — товары из seed-data, не из БД)
+  // Данные о товаре (денормализовано)
   productSlug     String
   productTitle    String
   productImageUrl String?
   psychicName     String
   psychicSlug     String
+  psychicAvatarUrl String?
   category        String
 
   // Заказ
   status          OrderStatus @default(PROCESSING)
-  amount          Int                  // Цена в копейках
-  clientData      Json                 // { name, birthDate, question, ... }
+  amount          Int
+  oldPrice        Int?
+  clientData      Json        @default("{}")
 
   // Результат
-  generatedResult String?    @db.Text  // AI-сгенерированный текст
+  generatedResult String?    @db.Text
   completedAt     DateTime?
 
   // Отзыв

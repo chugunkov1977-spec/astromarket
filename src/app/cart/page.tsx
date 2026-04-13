@@ -33,7 +33,6 @@ export default function CartPage() {
   const getTotal = useCartStore((s) => s.getTotal);
   const getDiscount = useCartStore((s) => s.getDiscount);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const authToken = useAuthStore((s) => s.token);
   const createOrder = useOrdersStore((s) => s.createOrder);
   const showToast = useToastStore((s) => s.showToast);
   const [authMounted, setAuthMounted] = useState(false);
@@ -66,13 +65,13 @@ export default function CartPage() {
     }
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (!authMounted) return;
     if (!isAuthenticated) {
       router.push('/auth');
       return;
     }
-    createOrder(items, {}, authToken);
+    await createOrder(items, {});
     clearCart();
     setCheckoutSuccess(true);
     setPromoApplied(null);
