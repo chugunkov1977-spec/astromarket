@@ -39,7 +39,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-sm text-mystic-500 leading-relaxed">
-              Персональные расклады Таро, астрология, нумерология и руны от AI-мастеров.
+              Персональные расклады Таро, астрология, нумерология и руны от лучших мастеров.
             </p>
           </div>
 
@@ -92,7 +92,7 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} AstroMarket. Все права защищены.
           </p>
           <p className="text-xs text-mystic-700">
-            Услуги носят развлекательный характер
+            Услуги носят развлекательный характер. Расклады и прогнозы генерируются с помощью искусственного интеллекта.
           </p>
         </div>
       </div>

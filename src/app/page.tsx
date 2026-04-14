@@ -286,7 +286,7 @@ export default function HomePage() {
               {[
                 { num: '1', icon: <Search className="w-5 h-5" />, title: 'Выберите услугу', desc: 'Найдите расклад в каталоге' },
                 { num: '2', icon: <UserCheck className="w-5 h-5" />, title: 'Расскажите о себе', desc: 'Имя, дата рождения, вопрос' },
-                { num: '3', icon: <Wand2 className="w-5 h-5" />, title: 'Мастер готовит ответ', desc: 'AI настраивается на вашу энергию' },
+                { num: '3', icon: <Wand2 className="w-5 h-5" />, title: 'Мастер готовит ответ', desc: 'Настраивается на вашу энергию' },
                 { num: '4', icon: <Gift className="w-5 h-5" />, title: 'Получите результат', desc: 'Расклад с интерпретацией' },
               ].map((step) => (
                 <div

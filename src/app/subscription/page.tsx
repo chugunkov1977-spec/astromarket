@@ -64,7 +64,7 @@ const plans: Plan[] = [
       { text: 'Всё из тарифа «Лунный»' },
       { text: 'Безлимитные мини-расклады' },
       { text: '1 премиум-консультация' },
-      { text: 'Персональный AI-наставник' },
+      { text: 'Персональный наставник' },
       { text: 'Эксклюзивные мастера' },
     ],
   },
@@ -73,7 +73,7 @@ const plans: Plan[] = [
 const perks = [
   { icon: Shield, label: 'Безопасная оплата' },
   { icon: RefreshCw, label: 'Отмена в любой момент' },
-  { icon: Sparkles, label: 'Персонализация AI' },
+  { icon: Sparkles, label: 'Персонализация' },
   { icon: Clock, label: 'Мгновенный доступ' },
 ];
 

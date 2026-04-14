@@ -3,10 +3,10 @@ import { Sparkles, Users, Zap, Shield } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
-export const metadata: Metadata = { title: 'О нас | AstroMarket', description: 'AstroMarket — первый AI-маркетплейс эзотерических услуг в России' };
+export const metadata: Metadata = { title: 'О нас | AstroMarket', description: 'AstroMarket — маркетплейс эзотерических услуг' };
 
 const features = [
-  { icon: Sparkles, title: 'AI-точность', desc: 'Предсказания на основе продвинутых алгоритмов искусственного интеллекта' },
+  { icon: Sparkles, title: 'Точность предсказаний', desc: 'Глубокий анализ и проверенные методики для точных прогнозов' },
   { icon: Users, title: '5 уникальных мастеров', desc: 'Каждый мастер обладает собственным стилем и специализацией' },
   { icon: Zap, title: 'Мгновенный результат', desc: 'Получайте персональные расклады за считанные минуты' },
   { icon: Shield, title: 'Конфиденциальность', desc: 'Ваши данные надёжно защищены и никогда не передаются третьим лицам' },
@@ -19,14 +19,14 @@ export default function AboutPage() {
       <main className="max-w-4xl mx-auto px-4 py-10">
         <h1 className="font-display text-3xl font-bold text-white mb-3">О нас</h1>
         <p className="text-mystic-400 mb-10 text-lg leading-relaxed">
-          AstroMarket — первый AI-маркетплейс эзотерических услуг в России
+          AstroMarket — маркетплейс эзотерических услуг
         </p>
 
         {/* Миссия */}
         <section className="mb-10 p-6 rounded-2xl glass-light">
           <h2 className="font-display text-xl font-bold text-white mb-3">Наша миссия</h2>
           <p className="text-sm text-mystic-300 leading-relaxed">
-            Мы создали платформу, где искусственный интеллект и древние эзотерические практики объединяются, чтобы дать вам персонализированные и точные предсказания. Наши AI-мастера сочетают глубокое знание традиций Таро, астрологии, нумерологии и рунологии с передовыми технологиями для создания уникального опыта.
+            Мы создали платформу, где древние эзотерические практики встречаются с современными технологиями, чтобы дать вам персонализированные и точные предсказания. Наши мастера обладают глубоким знанием традиций Таро, астрологии, нумерологии и рунологии.
           </p>
         </section>
 
@@ -48,7 +48,7 @@ export default function AboutPage() {
         <section className="mb-10 p-6 rounded-2xl glass-light">
           <h2 className="font-display text-xl font-bold text-white mb-3">Наша команда</h2>
           <p className="text-sm text-mystic-300 leading-relaxed">
-            За AstroMarket стоит команда энтузиастов, объединяющих экспертизу в области AI, UX-дизайна и эзотерических практик. Мы верим, что технологии могут сделать древнюю мудрость доступной каждому.
+            За AstroMarket стоит команда энтузиастов, объединяющих экспертизу в области дизайна, технологий и эзотерических практик. Мы верим, что древняя мудрость должна быть доступна каждому.
           </p>
         </section>
 
